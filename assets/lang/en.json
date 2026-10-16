@@ -67,6 +67,9 @@
     "open_links": "Open MangaBaka links",
     "open_links_subtext": "Handle MangaBaka URLs directly in-app",
     "open_links_subtitle": "System default settings",
+    "open_links_subtext_scheme": "Handle mangabaka:// links directly in-app",
+    "deep_link_failed": "Could not open that link.",
+    "deep_link_unsupported": "That link can't be opened in the app.",
     "advanced_settings": "Developer Tools",
     "advanced_settings_subtitle": "Onboarding, logs, visual previews",
     "developer_mode_enabled": "Developer mode enabled",
@@ -674,6 +677,8 @@
     "mix_dna_additional": "Additional DNA elements:",
     "no_release_notes": "No release notes provided.",
     "update_downloading": "Downloading {percent}%",
-    "open_download": "Open download"
+    "open_download": "Open download",
+    "onboarding_links_title": "Open Links",
+    "onboarding_links_subtitle": "Open series pages and other MangaBaka links directly in the app instead of your browser. You can change this anytime in Settings."
   }
 }

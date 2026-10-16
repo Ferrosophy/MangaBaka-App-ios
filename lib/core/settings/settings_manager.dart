@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:mangabaka_app/core/settings/setting_value.dart';
 import 'package:mangabaka_app/core/settings/settings_enums.dart';
@@ -118,6 +120,11 @@ class SettingsManager extends ChangeNotifier {
   final _showLibraryTabCounts =
       BoolSetting(SettingsKeys.showLibraryTabCounts, true);
 
+  /// Whether https://mangabaka.org links should open inside the app
+  /// rather than in a browser. Defaults to true on Android, false elsewhere.
+  final _openLinksInApp =
+      BoolSetting(SettingsKeys.openLinksInApp, Platform.isAndroid);
+
   /// 0 means "auto": fit as many columns as the available width allows.
   final _gridColumnCount = IntSetting(SettingsKeys.gridColumnCount, 0);
   final _libraryGridColumnCount =
@@ -190,6 +197,7 @@ class SettingsManager extends ChangeNotifier {
     _contentPreferences,
     _blurredContentRatings,
     _dismissedRecommendations,
+    _openLinksInApp,
   ];
 
   // ─── Lifecycle ───────────────────────────────────────────────────────────
@@ -378,6 +386,10 @@ class SettingsManager extends ChangeNotifier {
   bool get pushNotifications => _pushNotifications.value;
   Future<void> setPushNotifications(bool value) =>
       _apply(_pushNotifications, value);
+
+  bool get openLinksInApp => _openLinksInApp.value;
+  Future<void> setOpenLinksInApp(bool value) =>
+      _apply(_openLinksInApp, value);
 
   /// Reveals the Developer Tools category in Settings. Off by default; toggled
   /// by tapping the app logo on the Settings screen ten times quickly.
