@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+
 import 'package:mangabaka_app/core/localization/localization_service.dart';
 import 'package:mangabaka_app/core/theme/app_typography.dart';
+import 'package:mangabaka_app/core/theme/theme_context.dart';
 import 'package:mangabaka_app/core/utils/widget_utils.dart';
 import 'package:mangabaka_app/features/library/models/library_entry.dart';
 import 'package:mangabaka_app/features/series/models/series.dart';
 import 'package:mangabaka_app/features/series/widgets/app_bar/glass_control.dart';
 import 'package:mangabaka_app/features/series/widgets/app_bar/series_app_bar_metrics.dart';
 import 'package:mangabaka_app/features/series/widgets/app_bar/series_banner_background.dart';
-import 'package:mangabaka_app/core/theme/theme_context.dart';
 
 /// Banner hero for the series detail page: a full-bleed blurred cover that
 /// fades into the page background, with the cover artwork and serif title
@@ -233,13 +234,13 @@ class _SeriesDetailAppBarState extends State<SeriesDetailAppBar> {
         opacity: metrics.titleOpacity,
         child: Text(
           widget.title,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
           style: AppTypography.display(
             color: context.colors.text,
             fontWeight: FontWeight.w600,
             fontSize: 19,
           ),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
         ),
       ),
     );
