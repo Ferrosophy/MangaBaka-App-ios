@@ -35,6 +35,11 @@ final class M1Tests: XCTestCase {
     }
     func testLocalizedStrings() {
         XCTAssertEqual(Preferences(defaults: UserDefaults(suiteName: UUID().uuidString)!).text("Home"), "Home")
-        XCTAssertEqual(String(localized: "Home", locale: Locale(identifier: "zh-Hans")), "首页")
+        let name = UUID().uuidString
+        let defaults = UserDefaults(suiteName: name)!
+        defer { defaults.removePersistentDomain(forName: name) }
+        let preferences = Preferences(defaults: defaults)
+        preferences.language = "zh-Hans"
+        XCTAssertEqual(preferences.text("Home"), "首页")
     }
 }

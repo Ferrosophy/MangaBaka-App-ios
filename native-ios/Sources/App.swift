@@ -16,7 +16,11 @@ import Observation
         return Locale(identifier: Locale.preferredLanguages.first?.hasPrefix("zh") == true ? "zh-Hans" : "en")
     }
     var colorScheme: ColorScheme? { appearance == "dark" ? .dark : appearance == "light" ? .light : nil }
-    func text(_ key: String) -> String { String(localized: String.LocalizationValue(key), locale: locale) }
+    func text(_ key: String) -> String {
+        let code = locale.identifier.hasPrefix("zh") ? "zh-Hans" : "en"
+        guard let path = Bundle.main.path(forResource: code, ofType: "lproj"), let bundle = Bundle(path: path) else { return key }
+        return bundle.localizedString(forKey: key, value: key, table: "Localizable")
+    }
 }
 
 @main struct MangaBakaNativeApp: App {
