@@ -4,8 +4,7 @@ struct SeriesDetailView: View {
     let preview: HomeCard?
     @State private var model: DetailModel
     @State private var selected: DetailTab = .info
-    @State private var gallery: GalleryItem?
-    @State private var galleryItems: [GalleryItem] = []
+    @State private var gallery: GalleryPresentation?
     @State private var web: WebPage?
     @State private var scrollPosition = ScrollPosition(y: 0)
     @State private var offsets: [DetailTab: CGFloat] = [:]
@@ -47,7 +46,7 @@ struct SeriesDetailView: View {
         .task { await model.loadTaxonomy() }
         .task(id: selected) { await loadSelected() }
         .sheet(item: $web) { SafariView(url: $0.url).ignoresSafeArea() }
-        .fullScreenCover(item: $gallery) { item in ImageViewer(items: galleryItems, selected: item.id) }
+        .fullScreenCover(item: $gallery) { presentation in ImageViewer(items: presentation.items, selected: presentation.selectedID) }
         .accessibilityIdentifier("series-detail")
     }
     private func selectTab(_ tab: DetailTab) {
@@ -150,7 +149,7 @@ struct SeriesDetailView: View {
             }.buttonStyle(.plain)
         }
     }
-    private func showGallery(_ items: [GalleryItem], index: Int) { guard items.indices.contains(index) else { return }; galleryItems = items; gallery = items[index] }
+    private func showGallery(_ items: [GalleryItem], index: Int) { guard items.indices.contains(index) else { return }; gallery = GalleryPresentation(items: items, selectedID: items[index].id) }
 }
 func localDate(_ raw: String, locale: Locale) -> String {
     let f = DateFormatter(); f.locale = Locale(identifier: "en_US_POSIX"); f.dateFormat = "yyyy-MM-dd"; f.timeZone = TimeZone(secondsFromGMT: 0)

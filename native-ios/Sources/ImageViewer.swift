@@ -7,6 +7,11 @@ struct GalleryItem: Identifiable {
     let title: String
     var thumbnail: [URL] = []
 }
+struct GalleryPresentation: Identifiable {
+    let id = UUID()
+    let items: [GalleryItem]
+    let selectedID: String
+}
 struct ImageViewer: View {
     let items: [GalleryItem]
     @State var selected: String

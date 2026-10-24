@@ -45,7 +45,7 @@ struct WorksContent: View {
     @AppStorage("worksGrid") private var grid = false
     @Environment(\.locale) private var locale
     @Environment(Preferences.self) private var preferences
-    @State private var gallery: GalleryItem?
+    @State private var gallery: GalleryPresentation?
     private var items: [GalleryItem] {
         rows.map { row in
             let label = row.text("sub_title").isEmpty ? String(format: preferences.text("Volume %@"), row.text("sequence_string")) : row.text("sub_title")
@@ -59,7 +59,7 @@ struct WorksContent: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .top), count: grid || forceGrid ? 2 : 1), spacing: 14) {
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     let item = items[index]
-                    Button { if !item.urls.isEmpty { gallery = item } } label: {
+                    Button { if !item.urls.isEmpty { gallery = GalleryPresentation(items: items, selectedID: item.id) } } label: {
                         if grid || forceGrid { VStack(alignment: .leading, spacing: 8) {
                             CandidateImage(urls: item.thumbnail).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 12))
                             metadata(row, title: item.title)
@@ -73,7 +73,7 @@ struct WorksContent: View {
                     .accessibilityHint(Text(row.workImages.isEmpty ? "Series cover used as fallback" : "Preview cover"))
                 }
             }
-        }.fullScreenCover(item: $gallery) { item in ImageViewer(items: items, selected: item.id) }
+        }.fullScreenCover(item: $gallery) { presentation in ImageViewer(items: presentation.items, selected: presentation.selectedID) }
     }
     private func metadata(_ row: DetailRecord, title: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {

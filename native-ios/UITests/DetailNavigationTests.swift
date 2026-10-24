@@ -1,6 +1,7 @@
 import XCTest
 
 final class DetailNavigationTests: XCTestCase {
+    override func setUpWithError() throws { continueAfterFailure = false }
     func testEnglishDetailTabs() { review(language: "en", chinese: false) }
     func testChineseDetailTabs() { review(language: "zh-Hans", chinese: true) }
     func testCollectionDirectoryAndPreview() {
