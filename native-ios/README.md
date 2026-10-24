@@ -6,7 +6,7 @@ Seven native detail categories: Info, Covers, Related, Similar (including reader
 
 `brew install xcodegen && xcodegen generate` creates the Xcode project. Run scheme MangaBakaNative. No API credentials are needed.
 
-The M2 Actions workflow first captures public response fixtures and publishes `Native-M2-API-validation`, then generates the project, runs unit/UI checks, exports English/Chinese screenshots, and produces an unsigned arm64 Release IPA. UI checks use captured responses; production does not enable fixture mode. `M2_DETAIL` and `M2_FIXTURES` launch environment variables are test-only entry points.
+The M2 Actions workflow first captures public response fixtures and publishes `Native-M2-API-validation`, then runs independent IPA build and simulator-test jobs. The workflow exports English/Chinese screenshots and an unsigned arm64 Release IPA; a produced IPA is not itself proof that UI checks passed. A fresh supported simulator is booted explicitly, with bounded boot and test timeouts. UI checks use captured responses; production does not enable fixture mode. `M2_DETAIL` and `M2_FIXTURES` launch environment variables are test-only entry points.
 
 External publisher/source/news links open Safari inside the app. Collection and work metadata keep server order and use stable IDs, preserving different editions with the same volume number. Optional endpoints fail independently. No independent work detail, account, library writes, or reader is included.
 
