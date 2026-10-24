@@ -35,11 +35,18 @@ struct HomeCard: Identifiable {
         let id = string(json["id"])
         guard !id.isEmpty else { return nil }
         var titles: [String: String] = [:]
+        var titlePriorities: [String: Int] = [:]
         for t in json["titles"] as? [[String: Any]] ?? [] {
             let language = string(t["language"])
             let title = string(t["title"])
-            if !title.isEmpty, language == "en" || language == "zh" || language == "zh-Hans" || language == "zh-CN" {
-                titles[language.hasPrefix("zh") ? "zh" : "en"] = title
+            if !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, language == "en" || language == "zh" || language == "zh-Hans" || language == "zh-CN" {
+                let key = language.hasPrefix("zh") ? "zh" : "en"
+                let traits = t["traits"] as? [String] ?? []
+                let priority = ((t["is_primary"] as? Bool == true) ? 100 : 0) + (traits.contains("official") ? 10 : 0) + ((language == "zh-Hans" || language == "zh-CN") ? 1 : 0)
+                if titlePriorities[key] == nil || priority > titlePriorities[key]! {
+                    titles[key] = title
+                    titlePriorities[key] = priority
+                }
             }
         }
         let firstTitle = (json["titles"] as? [[String: Any]])?.first?["title"] as? String

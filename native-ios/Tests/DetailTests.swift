@@ -2,6 +2,20 @@ import XCTest
 @testable import MangaBakaNative
 
 final class DetailTests: XCTestCase {
+    func testPrimaryTitlesBeatLaterAliases() {
+        let titles: [[String: Any]] = [
+            ["language": "en", "title": "Chainsaw Man", "is_primary": true],
+            ["language": "en", "title": "CSM", "is_primary": false, "traits": ["alternative"]],
+            ["language": "zh", "title": "电锯人", "is_primary": true],
+            ["language": "zh", "title": "中文别名", "is_primary": false],
+            ["language": "zh-Hant", "title": "鏈鋸人", "is_primary": true]
+        ]
+        for order in [titles, Array(titles.reversed())] {
+            let card = HomeCard.parse(["id": 1677, "title": "Chainsaw Man", "titles": order], shelf: .trending)!
+            XCTAssertEqual(card.displayTitle(locale: Locale(identifier: "en")), "Chainsaw Man")
+            XCTAssertEqual(card.displayTitle(locale: Locale(identifier: "zh-Hans")), "电锯人")
+        }
+    }
     func testProviderLinks() {
         XCTAssertEqual(DetailRecord.sourceURL(key: "my_anime_list", row: ["id": 116778])?.absoluteString, "https://myanimelist.net/manga/116778")
         XCTAssertNil(DetailRecord.sourceURL(key: "missing", row: [:]))
