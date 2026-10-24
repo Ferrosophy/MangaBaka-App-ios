@@ -16,6 +16,7 @@ struct SeriesDetailView: View {
     init(id: String, preview: HomeCard? = nil) { self.preview = preview; _model = State(initialValue: DetailModel(id: id)) }
     private var title: String { model.series?.card?.displayTitle(locale: locale) ?? preview?.displayTitle(locale: locale) ?? preferences.text("Series") }
     private var cover: URL? { model.series?.cover ?? preview?.image }
+    private var originalCover: URL? { model.series?.fullSizeCoverCandidates.first ?? cover }
     var body: some View {
         ScrollView {
             LazyVStack(spacing: 20, pinnedViews: [.sectionHeaders]) {
@@ -67,7 +68,7 @@ struct SeriesDetailView: View {
     }
     private var hero: some View {
         HStack(alignment: .top, spacing: 18) {
-            Button { if let cover { showGallery([GalleryItem(id: "hero", urls: [cover], title: title)], index: 0) } } label: {
+            Button { if let cover { showGallery([GalleryItem(id: "hero", urls: [originalCover ?? cover], title: title)], index: 0) } } label: {
                 CandidateImage(urls: cover.map { [$0] } ?? []).frame(width: 120, height: 180).clipShape(RoundedRectangle(cornerRadius: 14))
             }.buttonStyle(.plain).accessibilityLabel(Text("Preview cover"))
             VStack(alignment: .leading, spacing: 10) {
@@ -118,8 +119,8 @@ struct SeriesDetailView: View {
             else if tab == .related { SeriesGrid(records: list.rows, currentID: model.seriesID, columns: 2) }
             else if tab == .similar { SimilarContent(list: list, readers: model.readers, currentID: model.seriesID) }
             else if tab == .news { news(list.rows) }
-            else if tab == .collections { ForEach(list.rows) { collection in NavigationLink { CollectionWorksView(collection: collection, fallback: cover) } label: { CollectionSummary(record: collection) }.buttonStyle(.plain).accessibilityIdentifier("collection-\(collection.id)") } }
-            else if tab == .works { WorksContent(rows: list.rows, fallback: cover) }
+            else if tab == .collections { ForEach(list.rows) { collection in NavigationLink { CollectionWorksView(collection: collection, fallback: originalCover) } label: { CollectionSummary(record: collection) }.buttonStyle(.plain).accessibilityIdentifier("collection-\(collection.id)") } }
+            else if tab == .works { WorksContent(rows: list.rows, fallback: originalCover) }
             if tab != .similar { ListStatus(list: list) }
         }
     }

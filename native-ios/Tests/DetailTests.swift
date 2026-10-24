@@ -21,6 +21,7 @@ final class DetailTests: XCTestCase {
     func testImagesRejectInvalidAndTryAllWorkImages() {
         let r = DetailRecord(["images": [["image": ["raw": ["url": ""]]], ["image": ["x250": ["x1": "https://example.org/2.jpg"], "raw": ["url": "https://example.org/raw.jpg"]]]]])
         XCTAssertEqual(r.workImages.count, 2)
+        XCTAssertEqual(r.fullSizeWorkImages.first?.absoluteString, "https://example.org/raw.jpg")
         XCTAssertTrue(ImageCandidates.urls("file:///tmp/a").isEmpty)
     }
     func testDuplicateVolumeNumbersArePreserved() {

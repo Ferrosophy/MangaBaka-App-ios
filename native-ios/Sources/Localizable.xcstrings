@@ -1444,9 +1444,21 @@
     "%lld volumes": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld volumes"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld volume"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld volumes"
+                }
+              }
+            }
           }
         },
         "zh-Hans": {
@@ -1460,9 +1472,21 @@
     "%lld pages": {
       "localizations": {
         "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "%lld pages"
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld page"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld pages"
+                }
+              }
+            }
           }
         },
         "zh-Hans": {
@@ -2317,6 +2341,22 @@
           "stringUnit": {
             "state": "translated",
             "value": "改编作品"
+          }
+        }
+      }
+    },
+    "Cover image": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cover image"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "封面图片"
           }
         }
       }

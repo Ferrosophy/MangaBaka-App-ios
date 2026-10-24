@@ -48,9 +48,9 @@ struct WorksContent: View {
     @State private var gallery: GalleryItem?
     private var items: [GalleryItem] {
         rows.map { row in
-            let label = row.text("sub_title").isEmpty ? preferences.text("Volume") + " " + row.text("sequence_string") : row.text("sub_title")
-            let urls = row.workImages + (fallback.map { [$0] } ?? [])
-            return GalleryItem(id: row.id, urls: urls, title: label)
+            let label = row.text("sub_title").isEmpty ? String(format: preferences.text("Volume %@"), row.text("sequence_string")) : row.text("sub_title")
+            let urls = row.fullSizeWorkImages + (fallback.map { [$0] } ?? [])
+            return GalleryItem(id: row.id, urls: urls, title: label, thumbnail: row.workImages + (fallback.map { [$0] } ?? []))
         }
     }
     var body: some View {
@@ -61,11 +61,11 @@ struct WorksContent: View {
                     let item = items[index]
                     Button { if !item.urls.isEmpty { gallery = item } } label: {
                         if grid || forceGrid { VStack(alignment: .leading, spacing: 8) {
-                            CandidateImage(urls: item.urls).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 12))
+                            CandidateImage(urls: item.thumbnail).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 12))
                             metadata(row, title: item.title)
                         } } else {
                             HStack(alignment: .top, spacing: 14) {
-                                CandidateImage(urls: item.urls).frame(width: 65, height: 98).clipShape(RoundedRectangle(cornerRadius: 8))
+                                CandidateImage(urls: item.thumbnail).frame(width: 65, height: 98).clipShape(RoundedRectangle(cornerRadius: 8))
                                 metadata(row, title: item.title).frame(maxWidth: .infinity, alignment: .leading)
                             }.detailCard()
                         }

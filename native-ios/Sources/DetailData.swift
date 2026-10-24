@@ -36,7 +36,13 @@ struct DetailRecord: Identifiable {
         let raw = values["image"] ?? values["cover"] ?? values["cover_image"]
         return ImageCandidates.urls(raw)
     }
+    var fullSizeCoverCandidates: [URL] {
+        let raw = values["image"] ?? values["cover"] ?? values["cover_image"]
+        let original = ImageCandidates.urls((raw as? [String: Any])?["raw"])
+        return original + coverCandidates.filter { !original.contains($0) }
+    }
     var workImages: [URL] { records("images").flatMap(\.coverCandidates) }
+    var fullSizeWorkImages: [URL] { records("images").flatMap(\.fullSizeCoverCandidates) }
 }
 enum ImageCandidates {
     static func urls(_ raw: Any?) -> [URL] {

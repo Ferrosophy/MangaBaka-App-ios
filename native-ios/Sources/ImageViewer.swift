@@ -44,6 +44,7 @@ struct ZoomImage: View {
                         .gesture(MagnificationGesture().onChanged { scale = min(5, max(1, previous * $0)) }.onEnded { _ in previous = scale; if scale == 1 { offset = .zero; savedOffset = .zero } })
                         .simultaneousGesture(DragGesture().onChanged { if scale > 1 { offset = CGSize(width: savedOffset.width + $0.translation.width, height: savedOffset.height + $0.translation.height) } }.onEnded { _ in savedOffset = offset })
                         .onTapGesture(count: 2) { scale = scale == 1 ? 2 : 1; previous = scale; offset = .zero; savedOffset = .zero }
+                        .accessibilityLabel(Text("Cover image")).accessibilityIdentifier("gallery-loaded-image")
                 } else if failed { Button("Retry") { retry += 1 } }
                 else { ProgressView().tint(.white) }
             }.clipped()

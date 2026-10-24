@@ -12,6 +12,7 @@ final class DetailNavigationTests: XCTestCase {
         let tabs = app.scrollViews["detail-tabs"].firstMatch
         app.buttons["Preview cover"].firstMatch.tap()
         XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.images["gallery-loaded-image"].firstMatch.waitForExistence(timeout: 20))
         app.buttons["Done"].tap()
         selectTab("Collections", app: app, tabs: tabs)
         let collection = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "collection-")).firstMatch
@@ -23,6 +24,7 @@ final class DetailNavigationTests: XCTestCase {
         directory.name = "M2-Collection-directory"; directory.lifetime = .keepAlways; add(directory)
         work.tap()
         XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.images["gallery-loaded-image"].firstMatch.waitForExistence(timeout: 20))
         let preview = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
         preview.name = "M2-Cover-preview"; preview.lifetime = .keepAlways; add(preview)
         app.buttons["Done"].tap()
