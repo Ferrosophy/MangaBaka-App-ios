@@ -2,6 +2,10 @@ import XCTest
 @testable import MangaBakaNative
 
 final class DetailTests: XCTestCase {
+    func testProviderLinks() {
+        XCTAssertEqual(DetailRecord.sourceURL(key: "my_anime_list", row: ["id": 116778])?.absoluteString, "https://myanimelist.net/manga/116778")
+        XCTAssertNil(DetailRecord.sourceURL(key: "missing", row: [:]))
+    }
     func testRecommendationParameters() {
         let similar = DetailAPI.requestURL(path: "v1/series/1677/similar", page: 1)
         XCTAssertEqual(URLComponents(url: similar, resolvingAgainstBaseURL: false)?.query, "limit=20")

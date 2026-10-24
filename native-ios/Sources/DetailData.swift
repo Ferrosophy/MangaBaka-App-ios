@@ -18,10 +18,20 @@ struct DetailRecord: Identifiable {
         let sources = values["source"] as? [String: [String: Any]] ?? [:]
         return sources.keys.sorted().compactMap { key in
             guard let row = sources[key], let score = Double(HomeCard.string(row["rating_normalized"])), score.isFinite else { return nil }
-            return (key, score, safeURL(row["url"] as? String ?? ""))
+            return (key, score, Self.sourceURL(key: key, row: row))
         }
     }
     var score: Double? { let scores = sourceScores.map(\.score); return scores.isEmpty ? nil : scores.reduce(0,+) / Double(scores.count) }
+    static func sourceURL(key: String, row: [String: Any]) -> URL? {
+        if let url = safeURL(row["url"] as? String ?? "") { return url }
+        let id = HomeCard.string(row["id"])
+        guard !id.isEmpty else { return nil }
+        let bases = ["anilist": "https://anilist.co/manga/", "my_anime_list": "https://myanimelist.net/manga/", "kitsu": "https://kitsu.io/manga/", "anime_planet": "https://www.anime-planet.com/manga/", "shikimori": "https://shikimori.one/mangas/", "manga_updates": "https://www.mangaupdates.com/series/", "anime_news_network": "https://www.animenewsnetwork.com/encyclopedia/manga.php?id="]
+        return bases[key].flatMap { safeURL($0 + id) }
+    }
+    static func sourceName(_ key: String) -> String {
+        ["anilist": "AniList", "my_anime_list": "MyAnimeList", "kitsu": "Kitsu", "anime_planet": "Anime-Planet", "shikimori": "Shikimori", "manga_updates": "MangaUpdates", "anime_news_network": "Anime News Network"][key] ?? key
+    }
     var coverCandidates: [URL] {
         let raw = values["image"] ?? values["cover"] ?? values["cover_image"]
         return ImageCandidates.urls(raw)

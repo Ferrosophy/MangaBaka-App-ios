@@ -10,9 +10,7 @@ final class DetailNavigationTests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["detail-tab-Info"].firstMatch.waitForExistence(timeout: 15))
         let tabs = app.scrollViews["detail-tabs"].firstMatch
-        let button = app.buttons["detail-tab-Collections"].firstMatch
-        for _ in 0..<5 { if button.isHittable { break }; tabs.swipeLeft() }
-        button.tap()
+        selectTab("Collections", app: app, tabs: tabs)
         let collection = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "collection-")).firstMatch
         XCTAssertTrue(collection.waitForExistence(timeout: 10))
         collection.tap()
@@ -26,6 +24,19 @@ final class DetailNavigationTests: XCTestCase {
         preview.name = "M2-Cover-preview"; preview.lifetime = .keepAlways; add(preview)
         app.buttons["Done"].tap()
     }
+    private func selectTab(_ tab: String, app: XCUIApplication, tabs: XCUIElement) {
+        let button = app.buttons["detail-tab-" + tab].firstMatch
+        for _ in 0..<8 {
+            let frame = button.frame
+            let viewport = tabs.frame
+            if frame.width > 0 && frame.minX >= viewport.minX && frame.maxX <= viewport.maxX {
+                button.tap()
+                return
+            }
+            tabs.swipeLeft()
+        }
+        XCTFail("Tab could not be scrolled into view: " + tab)
+    }
     private func review(language: String, chinese: Bool) {
         let app = XCUIApplication()
         app.launchArguments = ["-language", language]
@@ -34,13 +45,7 @@ final class DetailNavigationTests: XCTestCase {
         XCTAssertTrue(app.buttons["detail-tab-Info"].firstMatch.waitForExistence(timeout: 15))
         let tabs = app.scrollViews["detail-tabs"].firstMatch
         for tab in ["Info", "Covers", "Related", "Similar", "News", "Collections", "Works"] {
-            let button = app.buttons["detail-tab-" + tab].firstMatch
-            for _ in 0..<5 {
-                if button.isHittable { break }
-                tabs.swipeLeft()
-            }
-            XCTAssertTrue(button.isHittable, "Missing tab: " + tab)
-            button.tap()
+            selectTab(tab, app: app, tabs: tabs)
             let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
             shot.name = "M2-" + language + "-" + tab
             shot.lifetime = .keepAlways

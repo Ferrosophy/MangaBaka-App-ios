@@ -162,7 +162,7 @@ struct ListStatus: View {
         if list.loading { ProgressView().frame(maxWidth: .infinity).padding() }
         else if list.failed { Button("Unable to load this section. Retry") { Task { await list.load() } }.frame(minHeight: 44) }
         else if list.loaded && list.rows.isEmpty { ContentUnavailableView("Nothing here yet", systemImage: "books.vertical") }
-        else if list.hasNext { Button("Load more") { Task { await list.load() } }.frame(minHeight: 44).task { await list.load() } }
+        else if list.hasNext { Button("Load more") { Task { await list.load() } }.frame(minHeight: 44) }
     }
 }
 struct SeriesGrid: View {
@@ -171,16 +171,21 @@ struct SeriesGrid: View {
     var columns = 3
     var listStyle = false
     @Environment(\.locale) private var locale
+    @Environment(Preferences.self) private var preferences
     var body: some View {
         let cards = cards()
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: listStyle ? 1 : columns), alignment: .leading, spacing: 18) {
             ForEach(cards) { card in
                 NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: {
                     if listStyle { HStack { CoverImage(url: card.image).frame(width: 60, height: 90).clipShape(RoundedRectangle(cornerRadius: 8)); Text(card.displayTitle(locale: locale)).frame(maxWidth: .infinity, alignment: .leading) } }
-                    else { VStack(alignment: .leading) { CandidateImage(urls: card.image.map { [$0] } ?? []).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(card.displayTitle(locale: locale)).font(.caption.weight(.semibold)).lineLimit(2) } }
+                    else { VStack(alignment: .leading) { CandidateImage(urls: card.image.map { [$0] } ?? []).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(card.displayTitle(locale: locale)).font(.caption.weight(.semibold)).lineLimit(2); if let relation = relation(card.id) { Text(preferences.text(relation)).font(.caption).foregroundStyle(.secondary) } } }
                 }.buttonStyle(.plain).accessibilityIdentifier("series-card-\(card.id)")
             }
         }
+    }
+    private func relation(_ id: String) -> String? {
+        let value = records.first { $0.object("series").id == id }?.text("relation_type") ?? ""
+        return value.isEmpty ? nil : value
     }
     private func cards() -> [HomeCard] {
         var seen = Set<String>()

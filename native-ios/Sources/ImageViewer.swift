@@ -1,4 +1,5 @@
 import SwiftUI
+import ImageIO
 
 struct GalleryItem: Identifiable {
     let id: String
@@ -13,7 +14,7 @@ struct ImageViewer: View {
     var body: some View {
         NavigationStack {
             TabView(selection: $selected) {
-                ForEach(items) { item in ZoomImage(urls: item.urls).tag(item.id).accessibilityLabel(item.title) }
+                ForEach(items) { item in ZoomImage(urls: item.urls, active: abs((items.firstIndex(where: { $0.id == selected }) ?? 0) - (items.firstIndex(where: { $0.id == item.id }) ?? 0)) <= 1).tag(item.id).accessibilityLabel(item.title) }
             }.tabViewStyle(.page).background(.black)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { Button("Done") { dismiss() } }
@@ -25,6 +26,7 @@ struct ImageViewer: View {
 }
 struct ZoomImage: View {
     let urls: [URL]
+    var active = true
     @State private var image: UIImage?
     @State private var scale: CGFloat = 1
     @State private var previous: CGFloat = 1
@@ -45,9 +47,11 @@ struct ZoomImage: View {
                 } else if failed { Button("Retry") { retry += 1 } }
                 else { ProgressView().tint(.white) }
             }.clipped()
-        }.task(id: retry) {
+        }.task(id: String(retry) + String(active)) {
+            image = nil
+            guard active else { return }
             failed = false
-            for url in urls { if let data = try? await ImageCache.shared.data(for: url), let decoded = UIImage(data: data), !Task.isCancelled { image = decoded; return } }
+            for url in urls { if let data = try? await ImageCache.shared.data(for: url), let source = CGImageSourceCreateWithData(data as CFData, nil), let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, [kCGImageSourceCreateThumbnailFromImageAlways: true, kCGImageSourceThumbnailMaxPixelSize: 3072, kCGImageSourceCreateThumbnailWithTransform: true] as CFDictionary), !Task.isCancelled { image = UIImage(cgImage: cgImage); return } }
             failed = true
         }
     }

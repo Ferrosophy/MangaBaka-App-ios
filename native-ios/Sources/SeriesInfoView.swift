@@ -20,7 +20,7 @@ struct SeriesInfoView: View {
                     if let score = series.score { Text("★ \(score, specifier: "%.1f")").bold() }
                     ForEach(series.sourceScores, id: \.name) { source in
                         let url = source.url ?? links.first(where: { $0.text("name").lowercased().contains(source.name.lowercased()) }).flatMap { safeURL($0.text("url")) }
-                        Button { if let url { openURL(url) } } label: { Text("\(source.name)  \(source.score, specifier: "%.0f")").font(.subheadline) }.disabled(url == nil).frame(minHeight: 44)
+                        Button { if let url { openURL(url) } } label: { Text("\(DetailRecord.sourceName(source.name))  \(source.score, specifier: "%.0f")").font(.subheadline) }.disabled(url == nil).frame(minHeight: 44)
                     }
                 }
             }
@@ -97,7 +97,7 @@ struct SeriesInfoView: View {
         VStack(alignment: .leading, spacing: 6) { heading(label); Text(value.isEmpty ? preferences.text("Unknown") : value).textSelection(.enabled); Divider() }
     }
     private func heading(_ key: String) -> some View { Text(LocalizedStringKey(key)).font(.caption.weight(.bold)).foregroundStyle(.secondary).textCase(.uppercase) }
-    private func chip(_ text: String) -> some View { Text(text).font(.subheadline).padding(.horizontal, 12).padding(.vertical, 8).background(Color.secondary.opacity(0.1), in: Capsule()) }
+    private func chip(_ text: String) -> some View { Text(preferences.text(text)).font(.subheadline).padding(.horizontal, 12).padding(.vertical, 8).background(Color.secondary.opacity(0.1), in: Capsule()) }
     private func names(_ key: String, fallback: String) -> [String] {
         let values = series.records(key).map { $0.text("name") }.filter { !$0.isEmpty }
         return Array(Set(values.isEmpty ? (series.values[fallback] as? [String] ?? []) : values)).sorted()
