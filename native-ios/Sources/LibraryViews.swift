@@ -9,6 +9,7 @@ struct LoginRequiredView: View {
         } description: { Text("Sign in to sync your library, reading progress and ratings.") } actions: {
             Button("Sign in") { Task { await auth.login() } }.buttonStyle(.borderedProminent).disabled(auth.signingIn)
             if auth.signingIn { ProgressView() }
+            if let warning = auth.storageWarning { Text(LocalizedStringKey(warning)).font(.footnote).foregroundStyle(.secondary) }
         }
     }
 }

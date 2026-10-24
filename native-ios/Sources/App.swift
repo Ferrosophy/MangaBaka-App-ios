@@ -31,6 +31,8 @@ import SwiftData
     private let container: ModelContainer
     init() {
         do {
+            let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            try FileManager.default.createDirectory(at: support, withIntermediateDirectories: true)
             let container = try ModelContainer(for: LibraryCache.self)
             self.container = container
             let auth = AuthSession()

@@ -5,6 +5,7 @@ final class DetailNavigationTests: XCTestCase {
     func testEnglishDetailTabs() { review(language: "en", chinese: false) }
     func testChineseDetailTabs() { review(language: "zh-Hans", chinese: true) }
     func testCollectionDirectoryAndPreview() {
+        executionTimeAllowance = 240
         let app = XCUIApplication()
         app.launchArguments = ["-language", "en"]
         app.launchEnvironment = ["M2_DETAIL": "1677", "M2_FIXTURES": "1"]

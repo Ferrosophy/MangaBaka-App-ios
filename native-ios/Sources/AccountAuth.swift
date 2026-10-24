@@ -92,6 +92,7 @@ struct KeychainVault: CredentialVault {
     var signingIn = false
     var needsLogin = false
     var error: String?
+    var storageWarning: String?
     private(set) var generation = UUID()
     private var credentials: SessionCredentials?
     private var browser: ASWebAuthenticationSession?
@@ -104,7 +105,7 @@ struct KeychainVault: CredentialVault {
         self.configuration = configuration; self.transport = transport; self.vault = vault ?? KeychainVault()
         super.init()
         do { credentials = try self.vault.load(); profile = credentials?.profile }
-        catch { self.error = "Unable to access secure account storage." }
+        catch { self.storageWarning = "Unable to access secure account storage." }
     }
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
         UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.flatMap(\.windows).first(where: \.isKeyWindow) ?? ASPresentationAnchor()
