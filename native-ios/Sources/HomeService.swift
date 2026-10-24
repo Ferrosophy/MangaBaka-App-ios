@@ -22,7 +22,7 @@ struct HomeCard: Identifiable {
         let key = locale.identifier.hasPrefix("zh") ? "zh" : "en"
         return localizedTitles[key] ?? title
     }
-    static func string(_ value: Any?) -> String { value.map { String(describing: $0) } ?? "" }
+    static func string(_ value: Any?) -> String { guard let value, !(value is NSNull) else { return "" }; return String(describing: value) }
     static func imageURL(_ raw: Any?) -> URL? {
         if let s = raw as? String { return URL(string: s) }
         guard let map = raw as? [String: Any] else { return nil }

@@ -67,7 +67,7 @@ struct CandidateImage: View {
             if let image { Image(uiImage: image).resizable().scaledToFit() }
             else if failed || urls.isEmpty { Image(systemName: "book.closed").foregroundStyle(.secondary) }
             else { ProgressView() }
-        }.clipped().onTapGesture { if failed { retry += 1 } }
+        }.clipped()
         .task(id: urls.map(\.absoluteString).joined() + String(retry)) {
             image = nil; failed = false
             for url in urls { if let data = try? await ImageCache.shared.data(for: url), let decoded = UIImage(data: data), !Task.isCancelled { image = decoded; return } }

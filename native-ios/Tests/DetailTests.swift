@@ -13,7 +13,7 @@ final class DetailTests: XCTestCase {
         XCTAssertEqual(URLComponents(url: readers, resolvingAgainstBaseURL: false)?.query, "limit=24")
     }
     func testScoreExcludesMissingAndNonFinite() {
-        let s = DetailRecord(["source": ["a": ["rating_normalized": 80], "b": ["rating_normalized": "90"], "c": ["rating_normalized": "NaN"], "d": [:]]])
+        let s = DetailRecord(["source": ["a": ["rating_normalized": 80], "b": ["rating_normalized": "90"], "c": ["rating_normalized": "NaN"], "d": [:], "missing": NSNull()]])
         XCTAssertEqual(s.score, 85)
         XCTAssertNil(s.sourceScores.first?.url)
         XCTAssertNil(DetailRecord([:]).score)
@@ -36,6 +36,7 @@ final class DetailTests: XCTestCase {
     func testHomepageUsesSeriesIDForUpcoming() {
         let card = HomeCard.parse(["id": 100, "series_id": 1677, "sub_title": "Vol 1"], shelf: .upcoming)
         XCTAssertEqual(card?.seriesID, "1677")
+        XCTAssertNil(HomeCard.parse(["id": 100, "series_id": NSNull(), "sub_title": "Unknown work"], shelf: .upcoming)?.seriesID)
     }
     func testHierarchicalTags() {
         let groups = ResolvedTagGroup.resolve(names: ["Mafia", "Unknown tag"], paths: ["mafia": "Activities > Crimes > Organized Crime > Mafia"])

@@ -10,6 +10,9 @@ final class DetailNavigationTests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.buttons["detail-tab-Info"].firstMatch.waitForExistence(timeout: 15))
         let tabs = app.scrollViews["detail-tabs"].firstMatch
+        app.buttons["Preview cover"].firstMatch.tap()
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
+        app.buttons["Done"].tap()
         selectTab("Collections", app: app, tabs: tabs)
         let collection = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "collection-")).firstMatch
         XCTAssertTrue(collection.waitForExistence(timeout: 10))
