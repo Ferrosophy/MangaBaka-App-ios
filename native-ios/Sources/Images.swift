@@ -9,7 +9,8 @@ actor ImageCache {
         let token = generation
         let name = SHA256.hash(data: Data(url.absoluteString.utf8)).map { String(format: "%02x", $0) }.joined()
         let file = folder.appendingPathComponent(name)
-        if let data = try? Data(contentsOf: file) { return data }
+        if let data = try? Data(contentsOf: file), UIImage(data: data) != nil { return data }
+        try? FileManager.default.removeItem(at: file)
         let (data, response) = try await URLSession.shared.data(from: url)
         guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode), UIImage(data: data) != nil else { throw URLError(.cannotDecodeContentData) }
         if token == generation {

@@ -73,8 +73,15 @@ struct HomeView: View {
             if state.failed { Button("Unable to refresh. Retry") { Task { await model.load(shelf) } }.padding(.horizontal, 20) }
         }
     }
-    private func cardView(_ card: HomeCard, shelf: Shelf) -> some View {
-        Button { if let url = card.link { web = WebPage(url: url) } } label: {
+    @ViewBuilder private func cardView(_ card: HomeCard, shelf: Shelf) -> some View {
+        if let id = card.seriesID {
+            NavigationLink { SeriesDetailView(id: id, preview: card) } label: { cardLabel(card, shelf: shelf) }.buttonStyle(.plain)
+        } else {
+            Button { if let url = card.link { web = WebPage(url: url) } } label: { cardLabel(card, shelf: shelf) }.buttonStyle(.plain).disabled(card.link == nil)
+        }
+    }
+    private func cardLabel(_ card: HomeCard, shelf: Shelf) -> some View {
+        Group {
             VStack(alignment: .leading, spacing: 8) {
                 CoverImage(url: card.image).frame(width: shelf == .publishers ? 52 : 140, height: shelf == .publishers ? 52 : 210).clipShape(RoundedRectangle(cornerRadius: 14))
                 if let date = card.date {
@@ -87,7 +94,7 @@ struct HomeView: View {
             .frame(width: 140, alignment: .leading)
             .padding(shelf == .publishers ? 14 : 0)
             .background(shelf == .publishers ? Color.secondary.opacity(0.08) : .clear, in: RoundedRectangle(cornerRadius: 20))
-        }.buttonStyle(.plain).disabled(card.link == nil)
+        }
     }
     private func releaseDate(_ date: Date) -> String {
         let formatter = DateFormatter()

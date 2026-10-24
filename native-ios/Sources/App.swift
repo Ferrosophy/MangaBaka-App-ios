@@ -27,7 +27,11 @@ import Observation
     @State private var preferences = Preferences()
     var body: some Scene {
         WindowGroup {
-            RootView().environment(preferences)
+            Group {
+                if let id = ProcessInfo.processInfo.environment["M2_DETAIL"] {
+                    NavigationStack { SeriesDetailView(id: id) }
+                } else { RootView() }
+            }.environment(preferences)
                 .environment(\.locale, preferences.locale)
                 .preferredColorScheme(preferences.colorScheme)
                 .tint(.green)

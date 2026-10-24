@@ -17,6 +17,7 @@ struct HomeCard: Identifiable {
     let date: Date?
     let volume: String
     let count: Int?
+    var seriesID: String? = nil
     func displayTitle(locale: Locale) -> String {
         let key = locale.identifier.hasPrefix("zh") ? "zh" : "en"
         return localizedTitles[key] ?? title
@@ -67,7 +68,7 @@ struct HomeCard: Identifiable {
             link = seriesID.isEmpty ? nil : URL(string: "https://mangabaka.org/\(seriesID)")
         }
         guard !title.isEmpty else { return nil }
-        return HomeCard(id: id, title: title, localizedTitles: titles, image: image, link: link, date: date, volume: volume, count: count)
+        return HomeCard(id: id, title: title, localizedTitles: titles, image: image, link: link, date: date, volume: volume, count: count, seriesID: shelf == .publishers ? nil : (shelf == .upcoming ? (string(json["series_id"]).isEmpty ? nil : string(json["series_id"])) : id))
     }
 }
 protocol HomeProviding {

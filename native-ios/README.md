@@ -1,11 +1,15 @@
-# MangaBaka Native — M1
+# MangaBaka Native — M2
 
-Independent SwiftUI iPhone app, iOS 26+. All changes live on `feature/native-ios-m1`; the Flutter app and main branch are preserved.
+Independent iOS 26+ SwiftUI iPhone app on `feature/native-ios-m2`. Main and the M1 branch are preserved.
 
-Generate the project with `brew install xcodegen && xcodegen generate`, open `MangaBakaNative.xcodeproj`, and run the MangaBakaNative scheme. No API key is required. Six public discovery shelves, five tabs, English/Simplified Chinese, system/light/dark appearance, disk image cache and settings persistence are included. Library/Browse/News are explicitly marked as future features. No sign-in or native details are implemented.
+Seven native detail categories: Info, Covers, Related, Similar (including readers-also-like), News, Collections, Works. Home cards route by series ID, including upcoming works. Collections open paginated native release directories. Cover preview supports paging, zoom, pan, and system URL sharing. Library/Browse/News root tabs remain M1 placeholders; this milestone adds series-specific news only.
 
-Actions builds simulator unit tests and an unsigned arm64 Release IPA. Download `MangaBaka-Native-M1-IPA`. Signing is outside this milestone.
+`brew install xcodegen && xcodegen generate` creates the Xcode project. Run scheme MangaBakaNative. No API credentials are needed.
 
-Known scope: “View on MangaBaka” opens the website discovery page; it is not a native all-results or release-calendar implementation. Website content is not translated by this app. Live endpoint and website link smoke checks, physical-device accessibility/appearance review, and screenshots require a device or browser connected to the build environment. No such validation is claimed by the unit tests.
+The M2 Actions workflow first captures public response fixtures and publishes `Native-M2-API-validation`, then generates the project, runs unit/UI checks, exports English/Chinese screenshots, and produces an unsigned arm64 Release IPA. UI checks use captured responses; production does not enable fixture mode. `M2_DETAIL` and `M2_FIXTURES` launch environment variables are test-only entry points.
 
-API mappings were derived from Oazzies/MangaBaka-App (Apache-2.0). Native app source is distributed under the repository's Apache-2.0 license. Publisher/series artwork belongs to its respective owners and is served by MangaBaka.
+External publisher/source/news links open Safari inside the app. Collection and work metadata keep server order and use stable IDs, preserving different editions with the same volume number. Optional endpoints fail independently. No independent work detail, account, library writes, or reader is included.
+
+The upcoming-home image bug is tracked separately; detail work tiles inspect all supplied work images and use the series cover as a fallback. Fullscreen sharing currently shares the original image URL, not a saved photo. Physical device, large-text, reduced-transparency and VoiceOver review must be reported separately from simulator checks.
+
+Data/API mappings derived from Oazzies/MangaBaka-App, Apache-2.0. Artwork and metadata belong to the respective providers. See repository LICENSE and https://mangabaka.org/data/api for attribution and data terms.
