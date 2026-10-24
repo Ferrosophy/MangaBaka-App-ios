@@ -24,6 +24,7 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
     var volumes: Int
     var rereads: Int
     var rating: Int?
+    var note: String? = nil
     var createdAt: Date
     var updatedAt: Date
     func displayTitle(_ locale: Locale) -> String { localizedTitles[locale.identifier.hasPrefix("zh") ? "zh" : "en"] ?? title }
@@ -45,7 +46,7 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
         return Self(remoteID: HomeCard.string(row["id"]), seriesID: card.id, title: card.title, localizedTitles: card.localizedTitles,
                     aliases: (series["titles"] as? [[String: Any]] ?? []).compactMap { $0["title"] as? String }, coverURL: card.image,
                     totalChapters: Int(HomeCard.string(series["total_chapters"])), totalVolumes: Int(HomeCard.string(series["final_volume"])), state: state,
-                    chapters: try number("progress_chapter"), volumes: try number("progress_volume"), rereads: try number("number_of_rereads"), rating: rating, createdAt: created, updatedAt: updated)
+                    chapters: try number("progress_chapter"), volumes: try number("progress_volume"), rereads: try number("number_of_rereads"), rating: rating, note: row["note"] as? String, createdAt: created, updatedAt: updated)
     }
     static func date(_ raw: String) -> Date? {
         let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -55,7 +56,7 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
         let card = series.card
         return Self(remoteID: "", seriesID: series.id, title: card?.title ?? series.text("title"), localizedTitles: card?.localizedTitles ?? [:], aliases: [], coverURL: series.cover, totalChapters: Int(series.text("total_chapters")), totalVolumes: Int(series.text("final_volume")), state: state, chapters: 0, volumes: 0, rereads: 0, rating: nil, createdAt: Date(), updatedAt: Date())
     }
-    var writeBody: [String: Any] { ["state": state.rawValue, "progress_chapter": chapters, "progress_volume": volumes, "number_of_rereads": rereads, "rating": rating.map { $0 as Any } ?? NSNull()] }
+    var writeBody: [String: Any] { ["state": state.rawValue, "progress_chapter": chapters, "progress_volume": volumes, "number_of_rereads": rereads, "rating": rating.map { $0 as Any } ?? NSNull(), "note": note.map { $0 as Any } ?? NSNull()] }
     func validateBackup() throws {
         guard Int(seriesID).map({ $0 > 0 }) == true, (0...10_000_000).contains(chapters), (0...10_000_000).contains(volumes), (0...10_000_000).contains(rereads), rating.map({ (0...100).contains($0) }) ?? true,
               !title.isEmpty, totalChapters.map({ $0 >= 0 }) ?? true, totalVolumes.map({ $0 >= 0 }) ?? true else { throw AccountError.message("The backup contains an invalid reading record.") }
@@ -155,7 +156,8 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
         do {
             // Existing records accept partial PUTs; create then populate all fields.
             if create { _ = try await auth.request(path: "my/library/\(entry.id)", method: "POST", body: ["state": entry.state.rawValue]) }
-            _ = try await auth.request(path: "my/library/\(entry.id)", method: "PUT", body: entry.writeBody)
+            let body = Self.changedFields(entry, previous: create ? nil : entries.first { $0.id == entry.id })
+            if !body.isEmpty { _ = try await auth.request(path: "my/library/\(entry.id)", method: "PUT", body: body) }
         } catch {
             // A timeout may follow a committed write. Read back before offering a retry.
             if let all = try? await fetchAll(epoch: epoch), auth.generation == epoch {
@@ -168,6 +170,17 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
         var next = entry; next.updatedAt = Date()
         entries.removeAll { $0.id == entry.id }; entries.append(next)
         do { try persist() } catch { self.error = "Saved to cloud. Refresh to rebuild the local cache." }
+    }
+    static func changedFields(_ next: LibraryEntry, previous: LibraryEntry?) -> [String: Any] {
+        guard let previous else { return next.writeBody }
+        var body: [String: Any] = [:]
+        if next.state != previous.state { body["state"] = next.state.rawValue }
+        if next.chapters != previous.chapters { body["progress_chapter"] = next.chapters }
+        if next.volumes != previous.volumes { body["progress_volume"] = next.volumes }
+        if next.rereads != previous.rereads { body["number_of_rereads"] = next.rereads }
+        if next.rating != previous.rating { body["rating"] = next.rating.map { $0 as Any } ?? NSNull() }
+        if next.note != previous.note { body["note"] = next.note.map { $0 as Any } ?? NSNull() }
+        return body
     }
     func remove(_ entry: LibraryEntry) async throws {
         guard canWrite else { throw AccountError.message("Connect and finish syncing before editing your library.") }
@@ -182,7 +195,11 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
         guard canWrite else { error = "Connect and finish syncing before restoring a backup."; return records }
         restoring = true
         var failed: [LibraryEntry] = []
-        for entry in records {
+        let epoch = auth.generation, account = owner
+        for (index, entry) in records.enumerated() {
+            guard auth.generation == epoch, owner == account, auth.isAuthenticated else {
+                failed.append(contentsOf: records[index...]); break
+            }
             let exists = entries.contains { $0.id == entry.id }
             if exists && !overwrite.contains(entry.id) { continue }
             do { try await performSave(entry, create: !exists) } catch { failed.append(entry) }

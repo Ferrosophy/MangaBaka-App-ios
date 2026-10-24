@@ -107,6 +107,17 @@ private final class TestURLProtocol: URLProtocol {
         var e = try LibraryEntry.parse(row()); e.totalChapters = nil; e.totalVolumes = nil; e.rating = 0
         XCTAssertNil(e.percentage); XCTAssertEqual(LibraryStatistics(entries: [e]).mean, 0)
     }
+    func testPartialUpdateDoesNotOverwriteOtherFields() throws {
+        let before = try LibraryEntry.parse(row()); var after = before
+        after.chapters = 82
+        let fields = LibraryRepository.changedFields(after, previous: before)
+        XCTAssertEqual(fields.count, 1); XCTAssertEqual(fields["progress_chapter"] as? Int, 82)
+        XCTAssertNil(fields["rating"]); XCTAssertNil(fields["state"])
+    }
+    func testClearScoreSendsExplicitNull() throws {
+        let before = try LibraryEntry.parse(row()); var after = before; after.rating = nil
+        XCTAssertTrue(LibraryRepository.changedFields(after, previous: before)["rating"] is NSNull)
+    }
     func testPKCEVerifierAndConfiguration() throws {
         let a = try AuthSession.random(), b = try AuthSession.random()
         XCTAssertEqual(a.count, 43); XCTAssertNotEqual(a, b); XCTAssertFalse(a.contains("="))

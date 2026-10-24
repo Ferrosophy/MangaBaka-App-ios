@@ -92,7 +92,7 @@ struct KeychainVault: CredentialVault {
     init(configuration: OAuthConfiguration = .bundled, transport: URLSession = .shared, vault: (any CredentialVault)? = nil) {
         self.configuration = configuration; self.transport = transport; self.vault = vault ?? KeychainVault()
         super.init()
-        do { credentials = try vault.load(); profile = credentials?.profile }
+        do { credentials = try self.vault.load(); profile = credentials?.profile }
         catch { self.error = "Unable to access secure account storage." }
     }
     func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
