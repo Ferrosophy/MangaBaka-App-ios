@@ -135,7 +135,7 @@ struct SeriesDetailView: View {
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                 Button { showGallery(items, index: index) } label: {
                     VStack(alignment: .leading) { CandidateImage(urls: item.thumbnail).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(item.title).font(.caption).lineLimit(2) }
-                }.buttonStyle(.plain).disabled(item.urls.isEmpty)
+                }.buttonStyle(.plain).disabled(item.urls.isEmpty).accessibilityIdentifier("cover-card-\(index)")
             }
         }
     }

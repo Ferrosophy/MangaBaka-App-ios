@@ -14,6 +14,17 @@ final class DetailNavigationTests: XCTestCase {
         XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
         XCTAssertTrue(app.images["gallery-loaded-image"].firstMatch.waitForExistence(timeout: 20))
         app.buttons["Done"].tap()
+        selectTab("Covers", app: app, tabs: tabs)
+        let cover = app.buttons["cover-card-0"].firstMatch
+        XCTAssertTrue(cover.waitForExistence(timeout: 10))
+        cover.tap()
+        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.images["gallery-loaded-image"].firstMatch.waitForExistence(timeout: 20))
+        let firstTitle = app.staticTexts["gallery-title"].label
+        app.swipeLeft()
+        let changed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "label != %@", firstTitle), object: app.staticTexts["gallery-title"])
+        XCTAssertEqual(XCTWaiter.wait(for: [changed], timeout: 10), .completed)
+        app.buttons["Done"].tap()
         selectTab("Collections", app: app, tabs: tabs)
         let collection = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", "collection-")).firstMatch
         XCTAssertTrue(collection.waitForExistence(timeout: 10))

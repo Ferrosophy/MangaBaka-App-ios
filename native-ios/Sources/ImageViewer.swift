@@ -18,7 +18,7 @@ struct ImageViewer: View {
             }.tabViewStyle(.page).background(.black)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { Button("Done") { dismiss() } }
-                ToolbarItem(placement: .principal) { Text(items.first(where: { $0.id == selected })?.title ?? "").lineLimit(1).foregroundStyle(.white) }
+                ToolbarItem(placement: .principal) { Text(items.first(where: { $0.id == selected })?.title ?? "").lineLimit(1).foregroundStyle(.white).accessibilityIdentifier("gallery-title") }
                 ToolbarItem(placement: .topBarTrailing) { if let url = items.first(where: { $0.id == selected })?.urls.first { ShareLink(item: url) } }
             }
         }.preferredColorScheme(.dark)
@@ -42,7 +42,7 @@ struct ZoomImage: View {
                     Image(uiImage: image).resizable().scaledToFit().frame(width: geometry.size.width, height: geometry.size.height)
                         .scaleEffect(scale).offset(offset)
                         .gesture(MagnificationGesture().onChanged { scale = min(5, max(1, previous * $0)) }.onEnded { _ in previous = scale; if scale == 1 { offset = .zero; savedOffset = .zero } })
-                        .simultaneousGesture(DragGesture().onChanged { if scale > 1 { offset = CGSize(width: savedOffset.width + $0.translation.width, height: savedOffset.height + $0.translation.height) } }.onEnded { _ in savedOffset = offset })
+                        .simultaneousGesture(DragGesture().onChanged { if scale > 1 { offset = CGSize(width: savedOffset.width + $0.translation.width, height: savedOffset.height + $0.translation.height) } }.onEnded { _ in savedOffset = offset }, including: scale > 1 ? .all : .subviews)
                         .onTapGesture(count: 2) { scale = scale == 1 ? 2 : 1; previous = scale; offset = .zero; savedOffset = .zero }
                         .accessibilityLabel(Text("Cover image")).accessibilityIdentifier("gallery-loaded-image")
                 } else if failed { Button("Retry") { retry += 1 } }
