@@ -4312,6 +4312,38 @@
           }
         }
       }
+    },
+    "This account does not have permission for this action.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This account does not have permission for this action."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "此账号没有执行该操作的权限。"
+          }
+        }
+      }
+    },
+    "The server rejected the request. Please try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The server rejected the request. Please try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "服务器拒绝了请求，请重试。"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -10,7 +10,7 @@ enum AccountError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .message(let text): return text
-        case .http(let code): return "Server request failed (\(code))."
+        case .http(let code): return code == 429 ? "Too many requests. Try again later." : code == 403 ? "This account does not have permission for this action." : "The server rejected the request. Please try again."
         case .expired: return "Your session has expired. Sign in again."
         case .stale: return "The account has changed. Please try again."
         }
@@ -24,8 +24,19 @@ struct AccountProfile: Codable, Equatable {
         let d = object["data"] as? [String: Any] ?? object
         let id = HomeCard.string(d["id"] ?? d["sub"])
         guard !id.isEmpty else { throw AccountError.message("The server did not return an account ID.") }
-        return Self(id: id, name: HomeCard.string(d["preferred_username"] ?? d["nickname"] ?? d["name"] ?? d["username"] ?? id), avatar: safeURL(HomeCard.string(d["avatar_url"] ?? d["picture"])))
+        return Self(id: id, name: HomeCard.string(d["preferred_username"] ?? d["nickname"] ?? d["name"] ?? d["username"] ?? d["handle"] ?? id), avatar: ["avatar", "avatar_url", "picture", "image", "profile_picture"].compactMap { Self.avatarURL(d[$0]) }.first)
     }
+    static func avatarURL(_ value: Any?) -> URL? {
+        if let raw = value as? String, !raw.isEmpty {
+            guard let url = URL(string: raw, relativeTo: URL(string: "https://mangabaka.org"))?.absoluteURL else { return nil }
+            return safeURL(url.absoluteString)
+        }
+        if let map = value as? [String: Any] {
+            for key in ["url", "x250", "raw", "x1", "image", "original"] { if let url = avatarURL(map[key]) { return url } }
+        }
+        return nil
+    }
+
 }
 struct SessionCredentials: Codable {
     var access: String

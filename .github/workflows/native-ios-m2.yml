@@ -63,32 +63,21 @@ jobs:
       env:
         MANGABAKA_CLIENT_ID: ${{ vars.MANGABAKA_APP_CLIENT_ID }}
         MANGABAKA_REDIRECT_URI: ${{ vars.MANGABAKA_APP_REDIRECT_URI }}
+        ENV_FILE: ${{ secrets.ENV_FILE }}
     - name: Build unsigned Release
-      run: 'set -euo pipefail
-
-        xcodebuild build -project MangaBakaNative.xcodeproj -scheme MangaBakaNative
-        -configuration Release -sdk iphoneos -destination ''generic/platform=iOS''
-        -derivedDataPath build CODE_SIGNING_ALLOWED=NO
-
-        APP=build/Build/Products/Release-iphoneos/MangaBakaNative.app
-
-        lipo "$APP/MangaBakaNative" -verify_arch arm64
-
-        mkdir -p staging/Payload dist
-
-        cp -R "$APP" staging/Payload/
-
-        (cd staging && zip -qry ../dist/MangaBaka-Native-M3-unsigned.ipa Payload)
-
-        unzip -tq dist/MangaBaka-Native-M3-unsigned.ipa
-
-        (cd dist && shasum -a 256 *.ipa > SHA256SUMS)
-
-        echo "Source: $GITHUB_SHA" > dist/build-info.txt
-
-        xcodebuild -version >> dist/build-info.txt
-
-        '
+      run: "set -euo pipefail\nxcodebuild build -project MangaBakaNative.xcodeproj\
+        \ -scheme MangaBakaNative -configuration Release -sdk iphoneos -destination\
+        \ 'generic/platform=iOS' -derivedDataPath build CODE_SIGNING_ALLOWED=NO\n\
+        APP=build/Build/Products/Release-iphoneos/MangaBakaNative.app\nlipo \"$APP/MangaBakaNative\"\
+        \ -verify_arch arm64\nmkdir -p staging/Payload dist\ncp -R \"$APP\" staging/Payload/\n\
+        (cd staging && zip -qry ../dist/MangaBaka-Native-M3-unsigned.ipa Payload)\n\
+        unzip -tq dist/MangaBaka-Native-M3-unsigned.ipa\n(cd dist && shasum -a 256\
+        \ *.ipa > SHA256SUMS)\necho \"Source: $GITHUB_SHA\" > dist/build-info.txt\n\
+        xcodebuild -version >> dist/build-info.txt\n\npython3 - <<'PYINFO' >> dist/build-info.txt\n\
+        import plistlib\nwith open('build/Build/Products/Release-iphoneos/MangaBakaNative.app/Info.plist',\
+        \ 'rb') as f:\n    info = plistlib.load(f)\nprint('OAuth client configured:',\
+        \ bool(info.get('MangaBakaClientID')))\nprint('Real account/device verification:\
+        \ requires user authorization; not covered by mock tests')\nPYINFO\n"
     - uses: actions/upload-artifact@v4
       with:
         name: MangaBaka-Native-M3-IPA
@@ -127,6 +116,7 @@ jobs:
       env:
         MANGABAKA_CLIENT_ID: ${{ vars.MANGABAKA_APP_CLIENT_ID }}
         MANGABAKA_REDIRECT_URI: ${{ vars.MANGABAKA_APP_REDIRECT_URI }}
+        ENV_FILE: ${{ secrets.ENV_FILE }}
     - name: Boot a fresh iPhone simulator
       timeout-minutes: 7
       run: "set -euo pipefail\npython3 <<'PYBOOT'\nimport json, os, subprocess\nruntimes\
