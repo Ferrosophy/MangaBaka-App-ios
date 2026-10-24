@@ -55,13 +55,23 @@ struct DetailPage {
 actor DetailAPI {
     static let shared = DetailAPI()
     private var cache: [String: Data] = [:]
+    nonisolated static func requestURL(path: String, page: Int) -> URL {
+        var c = URLComponents(string: "https://api.mangabaka.org/\(path)")!
+        if path.hasSuffix("/similar") {
+            c.queryItems = [URLQueryItem(name: "limit", value: "20")]
+        } else if path.hasSuffix("/readers-also-like") {
+            c.queryItems = [URLQueryItem(name: "limit", value: "24")]
+        } else if ["/images", "/relationships", "/works", "/collections"].contains(where: path.hasSuffix) {
+            c.queryItems = [URLQueryItem(name: "page", value: String(page)), URLQueryItem(name: "limit", value: "30")]
+        }
+        return c.url!
+    }
     func data(path: String, page: Int = 1, refresh: Bool = false) async throws -> Data {
         let key = path.replacingOccurrences(of: "/", with: "-") + "-\(page)"
         if ProcessInfo.processInfo.environment["M2_FIXTURES"] == "1", let url = Bundle.main.url(forResource: key, withExtension: "json") { return try Data(contentsOf: url) }
         if !refresh, let data = cache[key] { return data }
-        var c = URLComponents(string: "https://api.mangabaka.org/\(path)")!
-        if path.split(separator: "/").count > 3 { c.queryItems = [URLQueryItem(name: "page", value: String(page)), URLQueryItem(name: "limit", value: "30")] }
-        var request = URLRequest(url: c.url!); request.timeoutInterval = 25
+        let url = Self.requestURL(path: path, page: page)
+        var request = URLRequest(url: url); request.timeoutInterval = 25
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let status = (response as? HTTPURLResponse)?.statusCode else { throw URLError(.badServerResponse) }
         guard (200..<300).contains(status) else { throw DetailError.http(status) }

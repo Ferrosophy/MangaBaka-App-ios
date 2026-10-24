@@ -7,7 +7,9 @@ struct SeriesDetailView: View {
     @State private var gallery: GalleryItem?
     @State private var galleryItems: [GalleryItem] = []
     @State private var web: WebPage?
-    @State private var visited: Set<DetailTab> = [.info]
+    @State private var scrollPosition = ScrollPosition(y: 0)
+    @State private var offsets: [DetailTab: CGFloat] = [:]
+    @State private var restoringScroll = false
     @State private var compactTitle = false
     @Environment(\.locale) private var locale
     @Environment(Preferences.self) private var preferences
@@ -15,27 +17,26 @@ struct SeriesDetailView: View {
     private var title: String { model.series?.card?.displayTitle(locale: locale) ?? preview?.displayTitle(locale: locale) ?? preferences.text("Series") }
     private var cover: URL? { model.series?.cover ?? preview?.image }
     var body: some View {
-        ZStack {
-            ForEach(DetailTab.allCases.filter { visited.contains($0) }) { tab in
-                ScrollView {
-                    LazyVStack(spacing: 20, pinnedViews: [.sectionHeaders]) {
-                        hero
-                        Section {
-                            VStack(alignment: .leading, spacing: 24) {
-                                if let failure = model.failure { ContentUnavailableView { Label(LocalizedStringKey(failure), systemImage: "exclamationmark.triangle") } actions: { Button("Retry") { Task { await model.load() } } } }
-                                content(tab)
-                            }.padding(20)
-                        } header: { tabBar }
-                    }.padding(.bottom, 24)
-                }
-                .onScrollGeometryChange(for: Bool.self) { $0.contentOffset.y > 180 } action: { _, compact in if selected == tab { compactTitle = compact } }
-                .refreshable {
-                    await model.load(refresh: true)
-                    await model.lists[tab]?.load(refresh: true)
-                    if tab == .similar { await model.readers.load(refresh: true) }
-                }
-                .opacity(selected == tab ? 1 : 0).allowsHitTesting(selected == tab).accessibilityHidden(selected != tab)
-            }
+        ScrollView {
+            LazyVStack(spacing: 20, pinnedViews: [.sectionHeaders]) {
+                hero
+                Section {
+                    VStack(alignment: .leading, spacing: 24) {
+                        if let failure = model.failure { ContentUnavailableView { Label(LocalizedStringKey(failure), systemImage: "exclamationmark.triangle") } actions: { Button("Retry") { Task { await model.load() } } } }
+                        content(selected)
+                    }.padding(20)
+                } header: { tabBar }
+            }.padding(.bottom, 24)
+        }
+        .scrollPosition($scrollPosition)
+        .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
+            compactTitle = offset > 180
+            if !restoringScroll { offsets[selected] = max(0, offset) }
+        }
+        .refreshable {
+            await model.load(refresh: true)
+            await model.lists[selected]?.load(refresh: true)
+            if selected == .similar { await model.readers.load(refresh: true) }
         }
         .navigationTitle(compactTitle ? title : "")
         .navigationBarTitleDisplayMode(.inline)
@@ -47,6 +48,18 @@ struct SeriesDetailView: View {
         .sheet(item: $web) { SafariView(url: $0.url).ignoresSafeArea() }
         .fullScreenCover(item: $gallery) { item in ImageViewer(items: galleryItems, selected: item.id) }
         .accessibilityIdentifier("series-detail")
+    }
+    private func selectTab(_ tab: DetailTab) {
+        guard selected != tab else { return }
+        let target = offsets[tab] ?? 0
+        restoringScroll = true
+        selected = tab
+        Task { @MainActor in
+            await Task.yield()
+            scrollPosition.scrollTo(y: target)
+            await Task.yield()
+            restoringScroll = false
+        }
     }
     private func loadSelected() async {
         if let list = model.lists[selected], !list.loaded { await list.load() }
@@ -86,7 +99,7 @@ struct SeriesDetailView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(DetailTab.allCases) { tab in
-                        Button { visited.insert(tab); selected = tab } label: {
+                        Button { selectTab(tab) } label: {
                             Text(LocalizedStringKey(tab.rawValue)).font(.subheadline.bold()).padding(.horizontal, 16).frame(minHeight: 44)
                                 .background(selected == tab ? Color.green.opacity(0.22) : .clear, in: Capsule())
                         }.buttonStyle(.plain).id(tab).accessibilityIdentifier("detail-tab-\(tab.rawValue)").accessibilityAddTraits(selected == tab ? .isSelected : [])

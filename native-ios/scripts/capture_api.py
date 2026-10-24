@@ -9,7 +9,15 @@ root.mkdir(parents=True, exist_ok=True)
 report = []
 
 def capture(path, page=1):
-    query = urllib.parse.urlencode({'page': page, 'limit': 30}) if len(path.split('/')) > 3 else ''
+    if path.endswith('/similar'):
+        params = {'limit': 20}
+    elif path.endswith('/readers-also-like'):
+        params = {'limit': 24}
+    elif path.endswith(('/images', '/relationships', '/works', '/collections')):
+        params = {'page': page, 'limit': 30}
+    else:
+        params = {}
+    query = urllib.parse.urlencode(params)
     request = urllib.request.Request('https://api.mangabaka.org/' + path + ('?' + query if query else ''), headers={'User-Agent': 'MangaBakaNative-M2-validation/0.2'})
     try:
         with urllib.request.urlopen(request, timeout=30) as response:

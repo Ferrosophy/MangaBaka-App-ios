@@ -2,6 +2,12 @@ import XCTest
 @testable import MangaBakaNative
 
 final class DetailTests: XCTestCase {
+    func testRecommendationParameters() {
+        let similar = DetailAPI.requestURL(path: "v1/series/1677/similar", page: 1)
+        XCTAssertEqual(URLComponents(url: similar, resolvingAgainstBaseURL: false)?.query, "limit=20")
+        let readers = DetailAPI.requestURL(path: "v2/series/1677/readers-also-like", page: 1)
+        XCTAssertEqual(URLComponents(url: readers, resolvingAgainstBaseURL: false)?.query, "limit=24")
+    }
     func testScoreExcludesMissingAndNonFinite() {
         let s = DetailRecord(["source": ["a": ["rating_normalized": 80], "b": ["rating_normalized": "90"], "c": ["rating_normalized": "NaN"], "d": [:]]])
         XCTAssertEqual(s.score, 85)
