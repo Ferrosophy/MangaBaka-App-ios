@@ -1,0 +1,51 @@
+name: MangaBakaNative
+options:
+  bundleIdPrefix: dev.ferrosophy
+  deploymentTarget:
+    iOS: '26.0'
+  developmentLanguage: en
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    TARGETED_DEVICE_FAMILY: '1'
+    CODE_SIGNING_ALLOWED: NO
+    MARKETING_VERSION: '0.1.0'
+    CURRENT_PROJECT_VERSION: '1'
+targets:
+  MangaBakaNative:
+    type: application
+    platform: iOS
+    sources: [Sources]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.ferrosophy.mangabaka.native
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: MangaBaka Native
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+  MangaBakaNativeTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies:
+      - target: MangaBakaNative
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+  MangaBakaNativeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies:
+      - target: MangaBakaNative
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  MangaBakaNative:
+    build:
+      targets:
+        MangaBakaNative: all
+    test:
+      targets: [MangaBakaNativeTests, MangaBakaNativeUITests]
