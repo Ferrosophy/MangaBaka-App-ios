@@ -3,6 +3,7 @@ import SwiftUI
 struct SeriesInfoView: View {
     let series: DetailRecord
     let links: [DetailRecord]
+    let tagPaths: [String: String]
     let openURL: (URL) -> Void
     @Environment(\.locale) private var locale
     @Environment(Preferences.self) private var preferences
@@ -27,9 +28,9 @@ struct SeriesInfoView: View {
                 heading("Description")
                 Text((try? AttributedString(markdown: descriptionText, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(descriptionText)).lineSpacing(6).lineLimit(expanded ? nil : 8).textSelection(.enabled)
                 HStack {
-                    Button(expanded ? "Show less" : "Show more") { expanded.toggle() }.frame(minHeight: 44)
+                    Button(LocalizedStringKey(expanded ? "Show less" : "Show more")) { expanded.toggle() }.frame(minHeight: 44)
                     Spacer()
-                    Button { UIPasteboard.general.string = descriptionText; copied = true } label: { Label(copied ? "Copied" : "Copy description", systemImage: "doc.on.doc") }.frame(minHeight: 44)
+                    Button { UIPasteboard.general.string = descriptionText; copied = true } label: { Label(LocalizedStringKey(copied ? "Copied" : "Copy description"), systemImage: "doc.on.doc") }.frame(minHeight: 44)
                 }
             }
             let genres = names("genres_v2", fallback: "genres")
@@ -48,9 +49,9 @@ struct SeriesInfoView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     heading("Tags")
                     ForEach(Array((allTags ? groups : Array(groups.prefix(2))).enumerated()), id: \.offset) { index, group in
-                        TagGroup(title: group.0, tags: group.1)
+                        TagGroup(group: group)
                     }
-                    if groups.count > 2 { Button(allTags ? "Show fewer tags" : "Show all tags") { allTags.toggle() }.frame(minHeight: 44) }
+                    if groups.count > 2 { Button(LocalizedStringKey(allTags ? "Show fewer tags" : "Show all tags")) { allTags.toggle() }.frame(minHeight: 44) }
                 }.detailCard()
             }
             if !links.isEmpty {
@@ -101,14 +102,12 @@ struct SeriesInfoView: View {
         let values = series.records(key).map { $0.text("name") }.filter { !$0.isEmpty }
         return Array(Set(values.isEmpty ? (series.values[fallback] as? [String] ?? []) : values)).sorted()
     }
-    private var tagGroups: [(String, [String])] {
+    private var tagGroups: [ResolvedTagGroup] {
         let rows = series.records("tags_v2")
-        if rows.isEmpty { let values = names("tags_v2", fallback: "tags"); return values.isEmpty ? [] : [(preferences.text("Tags"), values)] }
-        let grouped = Dictionary(grouping: rows) { row in
-            let category = row.object("category").text("name")
-            return category.isEmpty ? (row.text("category").isEmpty ? preferences.text("Tags") : row.text("category")) : category
-        }
-        return grouped.keys.sorted().map { ($0, Array(Set(grouped[$0]!.map { $0.text("name") }.filter { !$0.isEmpty })).sorted()) }
+        let raw = rows.isEmpty ? (series.values["tags"] as? [String] ?? []) : rows.map { $0.text("name") }
+        var paths = tagPaths
+        for row in rows where !row.text("name_path").isEmpty { paths[row.text("name").lowercased()] = row.text("name_path") }
+        return ResolvedTagGroup.resolve(names: raw, paths: paths)
     }
 }
 func safeURL(_ raw: String) -> URL? { guard let url = URL(string: raw), ["http", "https"].contains(url.scheme?.lowercased() ?? ""), url.host != nil else { return nil }; return url }
@@ -135,12 +134,16 @@ struct FlowLayout: Layout {
 }
 
 struct TagGroup: View {
-    let title: String
-    let tags: [String]
+    let group: ResolvedTagGroup
     @State private var expanded = true
     var body: some View {
         DisclosureGroup(isExpanded: $expanded) {
-            FlowLayout { ForEach(tags, id: \.self) { tag in Text(tag).font(.subheadline).padding(8).background(Color.secondary.opacity(0.1), in: Capsule()) } }.padding(.top, 8)
-        } label: { Text(title).font(.headline) }
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(group.subgroups.keys.sorted(), id: \.self) { subtitle in
+                    if !subtitle.isEmpty { Text(subtitle).font(.subheadline.bold()).foregroundStyle(.secondary) }
+                    FlowLayout { ForEach(group.subgroups[subtitle] ?? [], id: \.self) { tag in Text(tag).font(.subheadline).padding(8).background(Color.secondary.opacity(0.1), in: Capsule()) } }
+                }
+            }.padding(.top, 8)
+        } label: { Text(group.title).font(.headline) }
     }
 }

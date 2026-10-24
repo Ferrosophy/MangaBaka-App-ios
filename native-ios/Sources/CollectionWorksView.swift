@@ -69,7 +69,7 @@ struct WorksContent: View {
                                 metadata(row, title: item.title).frame(maxWidth: .infinity, alignment: .leading)
                             }.detailCard()
                         }
-                    }.buttonStyle(.plain)
+                    }.buttonStyle(.plain).accessibilityIdentifier("work-cover-\(row.id)")
                     .accessibilityHint(Text(row.workImages.isEmpty ? "Series cover used as fallback" : "Preview cover"))
                 }
             }

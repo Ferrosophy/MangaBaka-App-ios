@@ -42,6 +42,7 @@ struct SeriesDetailView: View {
         .toolbar(.hidden, for: .tabBar)
         .toolbar { ToolbarItem(placement: .topBarTrailing) { ShareLink(item: URL(string: "https://mangabaka.org/\(model.seriesID)")!) } }
         .task { await model.load(); await loadSelected() }
+        .task { await model.loadTaxonomy() }
         .task(id: selected) { await loadSelected() }
         .sheet(item: $web) { SafariView(url: $0.url).ignoresSafeArea() }
         .fullScreenCover(item: $gallery) { item in ImageViewer(items: galleryItems, selected: item.id) }
@@ -97,7 +98,7 @@ struct SeriesDetailView: View {
     }
     @ViewBuilder private func content(_ tab: DetailTab) -> some View {
         if tab == .info {
-            if let series = model.series { SeriesInfoView(series: series, links: model.lists[.info]?.rows ?? [], openURL: { web = WebPage(url: $0) }) }
+            if let series = model.series { SeriesInfoView(series: series, links: model.lists[.info]?.rows ?? [], tagPaths: model.tagPaths, openURL: { web = WebPage(url: $0) }) }
         } else if let list = model.lists[tab] {
             Text(LocalizedStringKey(tab.rawValue)).font(.headline)
             if tab == .covers { covers(list.rows) }
@@ -163,7 +164,7 @@ struct SeriesGrid: View {
                 NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: {
                     if listStyle { HStack { CoverImage(url: card.image).frame(width: 60, height: 90).clipShape(RoundedRectangle(cornerRadius: 8)); Text(card.title).frame(maxWidth: .infinity, alignment: .leading) } }
                     else { VStack(alignment: .leading) { CandidateImage(urls: card.image.map { [$0] } ?? []).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(card.title).font(.caption.weight(.semibold)).lineLimit(2) } }
-                }.buttonStyle(.plain)
+                }.buttonStyle(.plain).accessibilityIdentifier("series-card-\(card.id)")
             }
         }
     }

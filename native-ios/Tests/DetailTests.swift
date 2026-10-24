@@ -26,6 +26,12 @@ final class DetailTests: XCTestCase {
         let card = HomeCard.parse(["id": 100, "series_id": 1677, "sub_title": "Vol 1"], shelf: .upcoming)
         XCTAssertEqual(card?.seriesID, "1677")
     }
+    func testHierarchicalTags() {
+        let groups = ResolvedTagGroup.resolve(names: ["Mafia", "Unknown tag"], paths: ["mafia": "Activities > Crimes > Organized Crime > Mafia"])
+        XCTAssertEqual(groups.first?.title, "Activities")
+        XCTAssertEqual(groups.first?.subgroups["Crimes"], ["Organized Crime > Mafia"])
+        XCTAssertEqual(groups.last?.title, "Other")
+    }
     func testCapturedSeriesResponse() throws {
         let url = try XCTUnwrap(Bundle.main.url(forResource: "v1-series-1677-1", withExtension: "json"))
         let root = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: url)) as? [String: Any])

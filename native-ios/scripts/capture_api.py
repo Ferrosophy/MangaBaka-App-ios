@@ -29,7 +29,11 @@ for resource in ['links', 'images', 'relationships', 'similar', 'news', 'collect
     if payload and resource == 'collections' and payload.get('data'):
         capture('v1/collections/' + str(payload['data'][0]['id']) + '/works')
 capture('v2/series/1677/readers-also-like')
+capture('v1/tags')
 pathlib.Path('api-validation.json').write_text(json.dumps(report, indent=2))
 print(json.dumps(report, indent=2))
+if series:
+    data = series.get('data', {})
+    print('SERIES_SHAPE', json.dumps({k: data.get(k) for k in ['native_title', 'anime', 'published', 'authors', 'tags']}, ensure_ascii=False)[:6000])
 if not series:
     raise SystemExit('Core series API could not be captured; see api-validation.json')

@@ -96,6 +96,7 @@ enum DetailError: Error { case http(Int) }
     var series: DetailRecord?
     var failure: String?
     var loading = false
+    var tagPaths: [String: String] = [:]
     let seriesID: String
     let lists: [DetailTab: DetailList]
     let readers: DetailList
@@ -103,6 +104,14 @@ enum DetailError: Error { case http(Int) }
         seriesID = id
         lists = Dictionary(uniqueKeysWithValues: DetailTab.allCases.map { ($0, DetailList(path: "v1/series/\(id)/\($0.resource)")) })
         readers = DetailList(path: "v2/series/\(id)/readers-also-like")
+    }
+    func loadTaxonomy() async {
+        guard tagPaths.isEmpty else { return }
+        do {
+            let data = try await DetailAPI.shared.data(path: "v1/tags")
+            let page = try DetailPage.decode(data)
+            tagPaths = Dictionary(page.records.map { ($0.text("name").lowercased(), $0.text("name_path")) }, uniquingKeysWith: { first, _ in first })
+        } catch { /* Plain tag names remain available if the vocabulary is unavailable. */ }
     }
     func load(refresh: Bool = false) async {
         guard !loading else { return }; loading = true; failure = nil; defer { loading = false }
@@ -113,5 +122,23 @@ enum DetailError: Error { case http(Int) }
         } catch DetailError.http(404) { failure = "This series is unavailable" }
         catch DetailError.http(429) { failure = "Too many requests. Try again later." }
         catch { failure = "Unable to load this section" }
+    }
+}
+
+struct ResolvedTagGroup: Identifiable {
+    let title: String
+    let subgroups: [String: [String]]
+    var id: String { title }
+    static func resolve(names: [String], paths: [String: String]) -> [ResolvedTagGroup] {
+        var groups: [String: [String: Set<String>]] = [:]
+        for name in names {
+            let path = paths[name.lowercased()].flatMap { $0.isEmpty ? nil : $0 } ?? name
+            let parts = path.components(separatedBy: " > ")
+            let header = parts.count >= 2 ? parts[0] : "Other"
+            let subgroup = parts.count >= 3 ? parts[1] : ""
+            let label = parts.count >= 3 ? parts.dropFirst(2).joined(separator: " > ") : (parts.count == 2 ? parts[1] : name)
+            groups[header, default: [:]][subgroup, default: []].insert(label)
+        }
+        return groups.keys.sorted().map { key in ResolvedTagGroup(title: key, subgroups: groups[key]!.mapValues { $0.sorted() }) }
     }
 }
