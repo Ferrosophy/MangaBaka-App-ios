@@ -87,7 +87,7 @@ jobs:
           test -f "$APP/Frameworks/Flutter.framework/Flutter"
           VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")
           EXECUTABLE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")
-          lipo -verify_arch arm64 "$APP/$EXECUTABLE"
+          lipo "$APP/$EXECUTABLE" -verify_arch arm64
           mkdir -p "$RUNNER_TEMP/ipa-stage/Payload" dist
           cp -R "$APP" "$RUNNER_TEMP/ipa-stage/Payload/Runner.app"
           IPA="$GITHUB_WORKSPACE/dist/MangaBaka-${VERSION}-unsigned.ipa"
