@@ -170,13 +170,14 @@ struct SeriesGrid: View {
     let currentID: String
     var columns = 3
     var listStyle = false
+    @Environment(\.locale) private var locale
     var body: some View {
         let cards = cards()
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: listStyle ? 1 : columns), alignment: .leading, spacing: 18) {
             ForEach(cards) { card in
                 NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: {
-                    if listStyle { HStack { CoverImage(url: card.image).frame(width: 60, height: 90).clipShape(RoundedRectangle(cornerRadius: 8)); Text(card.title).frame(maxWidth: .infinity, alignment: .leading) } }
-                    else { VStack(alignment: .leading) { CandidateImage(urls: card.image.map { [$0] } ?? []).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(card.title).font(.caption.weight(.semibold)).lineLimit(2) } }
+                    if listStyle { HStack { CoverImage(url: card.image).frame(width: 60, height: 90).clipShape(RoundedRectangle(cornerRadius: 8)); Text(card.displayTitle(locale: locale)).frame(maxWidth: .infinity, alignment: .leading) } }
+                    else { VStack(alignment: .leading) { CandidateImage(urls: card.image.map { [$0] } ?? []).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(card.displayTitle(locale: locale)).font(.caption.weight(.semibold)).lineLimit(2) } }
                 }.buttonStyle(.plain).accessibilityIdentifier("series-card-\(card.id)")
             }
         }

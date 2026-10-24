@@ -13,12 +13,12 @@ struct DetailRecord: Identifiable {
         return records(key).map { $0.text("name").isEmpty ? $0.text("title") : $0.text("name") }.filter { !$0.isEmpty }.joined(separator: ", ")
     }
     var card: HomeCard? { HomeCard.parse(values, shelf: .trending) }
-    var cover: URL? { HomeCard.imageURL(values["cover"] ?? values["cover_image"]) }
+    var cover: URL? { ImageCandidates.urls(values["cover"] ?? values["cover_image"]).first }
     var sourceScores: [(name: String, score: Double, url: URL?)] {
         let sources = values["source"] as? [String: [String: Any]] ?? [:]
         return sources.keys.sorted().compactMap { key in
             guard let row = sources[key], let score = Double(HomeCard.string(row["rating_normalized"])), score.isFinite else { return nil }
-            return (key, score, URL(string: row["url"] as? String ?? ""))
+            return (key, score, safeURL(row["url"] as? String ?? ""))
         }
     }
     var score: Double? { let scores = sourceScores.map(\.score); return scores.isEmpty ? nil : scores.reduce(0,+) / Double(scores.count) }

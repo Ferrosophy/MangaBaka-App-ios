@@ -11,6 +11,7 @@ final class DetailTests: XCTestCase {
     func testScoreExcludesMissingAndNonFinite() {
         let s = DetailRecord(["source": ["a": ["rating_normalized": 80], "b": ["rating_normalized": "90"], "c": ["rating_normalized": "NaN"], "d": [:]]])
         XCTAssertEqual(s.score, 85)
+        XCTAssertNil(s.sourceScores.first?.url)
         XCTAssertNil(DetailRecord([:]).score)
     }
     func testImagesRejectInvalidAndTryAllWorkImages() {
