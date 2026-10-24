@@ -1,17 +1,11 @@
-name: Native iOS M2
+name: Native iOS M3
 'on':
   workflow_dispatch: null
-  push:
-    branches:
-    - feature/native-ios-m2
-    paths:
-    - native-ios/**
-    - .github/workflows/native-ios-m2.yml
 permissions:
   contents: read
 concurrency:
-  group: native-m2-${{ github.ref }}-${{ github.sha }}
-  cancel-in-progress: true
+  group: native-m3-${{ github.ref }}
+  cancel-in-progress: false
 jobs:
   api:
     runs-on: ubuntu-latest
@@ -27,13 +21,13 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: Native-M2-API-validation
+        name: Native-M3-API-validation
         path: native-ios/api-validation.json
         if-no-files-found: ignore
         retention-days: 14
     - uses: actions/upload-artifact@v4
       with:
-        name: Native-M2-fixtures
+        name: Native-M3-fixtures
         path: native-ios/Sources/Fixtures/
         if-no-files-found: error
         retention-days: 14
@@ -52,18 +46,28 @@ jobs:
         xcode-version: '26.3'
     - uses: actions/download-artifact@v4
       with:
-        name: Native-M2-fixtures
+        name: Native-M3-fixtures
         path: native-ios/Sources/Fixtures
     - name: Generate Xcode project
       run: 'brew install xcodegen
 
+        python3 -m venv /tmp/m3-config-venv
+
+        /tmp/m3-config-venv/bin/pip -q install PyYAML
+
+        /tmp/m3-config-venv/bin/python scripts/configure_oauth.py
+
         xcodegen generate
 
         '
+      env:
+        MANGABAKA_CLIENT_ID: ${{ vars.MANGABAKA_APP_CLIENT_ID }}
+        MANGABAKA_REDIRECT_URI: ${{ vars.MANGABAKA_APP_REDIRECT_URI }}
     - name: Build unsigned Release
       run: 'set -euo pipefail
 
-        xcodebuild build -project MangaBakaNative.xcodeproj -scheme MangaBakaNative -configuration Release -sdk iphoneos -destination ''generic/platform=iOS''
+        xcodebuild build -project MangaBakaNative.xcodeproj -scheme MangaBakaNative
+        -configuration Release -sdk iphoneos -destination ''generic/platform=iOS''
         -derivedDataPath build CODE_SIGNING_ALLOWED=NO
 
         APP=build/Build/Products/Release-iphoneos/MangaBakaNative.app
@@ -74,9 +78,9 @@ jobs:
 
         cp -R "$APP" staging/Payload/
 
-        (cd staging && zip -qry ../dist/MangaBaka-Native-M2-unsigned.ipa Payload)
+        (cd staging && zip -qry ../dist/MangaBaka-Native-M3-unsigned.ipa Payload)
 
-        unzip -tq dist/MangaBaka-Native-M2-unsigned.ipa
+        unzip -tq dist/MangaBaka-Native-M3-unsigned.ipa
 
         (cd dist && shasum -a 256 *.ipa > SHA256SUMS)
 
@@ -87,7 +91,7 @@ jobs:
         '
     - uses: actions/upload-artifact@v4
       with:
-        name: MangaBaka-Native-M2-IPA
+        name: MangaBaka-Native-M3-IPA
         path: native-ios/dist/
         if-no-files-found: error
         retention-days: 14
@@ -106,46 +110,62 @@ jobs:
         xcode-version: latest-stable
     - uses: actions/download-artifact@v4
       with:
-        name: Native-M2-fixtures
+        name: Native-M3-fixtures
         path: native-ios/Sources/Fixtures
     - name: Generate Xcode project
       run: 'brew install xcodegen
 
+        python3 -m venv /tmp/m3-config-venv
+
+        /tmp/m3-config-venv/bin/pip -q install PyYAML
+
+        /tmp/m3-config-venv/bin/python scripts/configure_oauth.py
+
         xcodegen generate
 
         '
+      env:
+        MANGABAKA_CLIENT_ID: ${{ vars.MANGABAKA_APP_CLIENT_ID }}
+        MANGABAKA_REDIRECT_URI: ${{ vars.MANGABAKA_APP_REDIRECT_URI }}
     - name: Boot a fresh iPhone simulator
       timeout-minutes: 7
-      run: "set -euo pipefail\npython3 <<'PYBOOT'\nimport json, os, subprocess\nruntimes = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list',\
-        \ 'runtimes', '-j']))['runtimes']\nsupported = [r for r in runtimes if r.get('isAvailable') and r['identifier'].split('.')[-1].startswith('iOS-26')]\n\
-        runtime = max(supported, key=lambda r: tuple(map(int, r['version'].split('.'))))\ntypes = json.loads(subprocess.check_output(['xcrun', 'simctl',\
-        \ 'list', 'devicetypes', '-j']))['devicetypes']\ndevice_type = next(t['identifier'] for t in types if t['name'] == 'iPhone 17 Pro')\ndevice = subprocess.check_output(['xcrun',\
-        \ 'simctl', 'create', 'M2 Review', device_type, runtime['identifier']], text=True).strip()\nprint('Using', runtime['name'], device, flush=True)\n\
-        subprocess.run(['xcrun', 'simctl', 'boot', device], check=True)\nsubprocess.run(['xcrun', 'simctl', 'bootstatus', device, '-b'], check=True, timeout=300)\n\
-        with open(os.environ['GITHUB_ENV'], 'a') as f:\n    f.write('M2_SIMULATOR=' + device + '\\n')\nPYBOOT\n"
+      run: "set -euo pipefail\npython3 <<'PYBOOT'\nimport json, os, subprocess\nruntimes\
+        \ = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'runtimes',\
+        \ '-j']))['runtimes']\nsupported = [r for r in runtimes if r.get('isAvailable')\
+        \ and r['identifier'].split('.')[-1].startswith('iOS-26')]\nruntime = max(supported,\
+        \ key=lambda r: tuple(map(int, r['version'].split('.'))))\ntypes = json.loads(subprocess.check_output(['xcrun',\
+        \ 'simctl', 'list', 'devicetypes', '-j']))['devicetypes']\ndevice_type = next(t['identifier']\
+        \ for t in types if t['name'] == 'iPhone 17 Pro')\ndevice = subprocess.check_output(['xcrun',\
+        \ 'simctl', 'create', 'M3 Review', device_type, runtime['identifier']], text=True).strip()\n\
+        print('Using', runtime['name'], device, flush=True)\nsubprocess.run(['xcrun',\
+        \ 'simctl', 'boot', device], check=True)\nsubprocess.run(['xcrun', 'simctl',\
+        \ 'bootstatus', device, '-b'], check=True, timeout=300)\nwith open(os.environ['GITHUB_ENV'],\
+        \ 'a') as f:\n    f.write('M3_SIMULATOR=' + device + '\\n')\nPYBOOT\n"
     - name: Test on iPhone simulator
       timeout-minutes: 15
       run: 'set -euo pipefail
 
-        xcodebuild test -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance
-        180 -project MangaBakaNative.xcodeproj -scheme MangaBakaNative -destination "platform=iOS Simulator,id=$M2_SIMULATOR" -destination-timeout 90 -resultBundlePath
-        TestResults.xcresult CODE_SIGNING_ALLOWED=NO
+        xcodebuild test -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance
+        120 -maximum-test-execution-time-allowance 180 -project MangaBakaNative.xcodeproj
+        -scheme MangaBakaNative -destination "platform=iOS Simulator,id=$M3_SIMULATOR"
+        -destination-timeout 90 -resultBundlePath TestResults.xcresult CODE_SIGNING_ALLOWED=NO
 
         '
     - name: Export review screenshots
       if: always()
-      run: xcrun xcresulttool export attachments --path TestResults.xcresult --output-path screenshots || true
+      run: xcrun xcresulttool export attachments --path TestResults.xcresult --output-path
+        screenshots || true
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: Native-M2-review-screenshots
+        name: Native-M3-review-screenshots
         path: native-ios/screenshots/
         if-no-files-found: ignore
         retention-days: 14
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: Native-M2-test-results
+        name: Native-M3-test-results
         path: native-ios/TestResults.xcresult
         if-no-files-found: ignore
         retention-days: 7
