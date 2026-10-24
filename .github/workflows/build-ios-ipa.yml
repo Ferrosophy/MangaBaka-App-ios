@@ -1,0 +1,125 @@
+name: Build unsigned iOS IPA
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/build-ios-ipa.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-ipa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: Verify iOS SDK
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          SDK_VERSION=$(xcrun --sdk iphoneos --show-sdk-version)
+          python3 - "$SDK_VERSION" <<'PY'
+          import sys
+          version = tuple(map(int, sys.argv[1].split('.')))
+          if version < (26, 1):
+              raise SystemExit('device_info_plus requires the iOS 26.1 SDK or later')
+          PY
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: '3.44.3'
+          cache: true
+
+      - name: Prepare configuration
+        env:
+          ENV_FILE: ${{ secrets.ENV_FILE }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$ENV_FILE" ]]; then
+            printf '%s\n' "$ENV_FILE" > .env
+          else
+            cp .env.example .env
+            echo '::warning::No ENV_FILE configured. OAuth login will be unavailable in this IPA.'
+          fi
+          # Keep the app and Pods on the same minimum supported iOS version.
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+          podfile = Path('ios/Podfile')
+          text = podfile.read_text()
+          text = re.sub(r"(?m)^#?\s*platform :ios, '[^']+'", "platform :ios, '15.5'", text)
+          podfile.write_text(text)
+          project = Path('ios/Runner.xcodeproj/project.pbxproj')
+          text = re.sub(r'IPHONEOS_DEPLOYMENT_TARGET = [0-9.]+;', 'IPHONEOS_DEPLOYMENT_TARGET = 15.5;', project.read_text())
+          project.write_text(text)
+          PY
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      - name: Build device application
+        run: |
+          set -euo pipefail
+          flutter build ios --release --no-codesign 2>&1 | tee "$RUNNER_TEMP/ios-build.log"
+
+      - name: Package and verify IPA
+        run: |
+          set -euo pipefail
+          APP="$GITHUB_WORKSPACE/build/ios/iphoneos/Runner.app"
+          test -d "$APP"
+          test -f "$APP/Frameworks/App.framework/App"
+          test -f "$APP/Frameworks/Flutter.framework/Flutter"
+          VERSION=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$APP/Info.plist")
+          EXECUTABLE=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleExecutable' "$APP/Info.plist")
+          lipo -verify_arch arm64 "$APP/$EXECUTABLE"
+          mkdir -p "$RUNNER_TEMP/ipa-stage/Payload" dist
+          cp -R "$APP" "$RUNNER_TEMP/ipa-stage/Payload/Runner.app"
+          IPA="$GITHUB_WORKSPACE/dist/MangaBaka-${VERSION}-unsigned.ipa"
+          (cd "$RUNNER_TEMP/ipa-stage" && zip -qry "$IPA" Payload)
+          unzip -tq "$IPA"
+          shasum -a 256 "$IPA" | sed "s|$GITHUB_WORKSPACE/dist/||" > "$IPA.sha256"
+          {
+            echo "Source: $GITHUB_REPOSITORY@$GITHUB_SHA"
+            flutter --version
+            xcodebuild -version
+            echo 'Unsigned Release IPA for physical iOS devices (iOS 15.5+).'
+          } > dist/build-info.txt
+          {
+            echo '### IPA ready'
+            echo 'Download the **MangaBaka-unsigned-IPA** artifact below and extract the IPA.'
+            echo 'Signing is required before installation. No signing credentials were used.'
+            echo "Source commit: $GITHUB_SHA"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: MangaBaka-unsigned-IPA
+          path: dist/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-log
+          path: ${{ runner.temp }}/ios-build.log
+          if-no-files-found: ignore
+          retention-days: 7
