@@ -9,8 +9,8 @@ settings:
     SWIFT_VERSION: '5.0'
     TARGETED_DEVICE_FAMILY: '1'
     CODE_SIGNING_ALLOWED: NO
-    MARKETING_VERSION: '0.2.0'
-    CURRENT_PROJECT_VERSION: '4'
+    MARKETING_VERSION: '0.3.0'
+    CURRENT_PROJECT_VERSION: '1'
 targets:
   MangaBakaNative:
     type: application
@@ -19,7 +19,11 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.ferrosophy.mangabaka.native
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_FILE: Info.plist
+        MANGABAKA_CLIENT_ID: ''
+        MANGABAKA_REDIRECT_URI: 'dev.ferrosophy.mangabaka.native://oauthredirect'
+        MANGABAKA_CALLBACK_SCHEME: 'dev.ferrosophy.mangabaka.native'
         INFOPLIST_KEY_CFBundleDisplayName: MangaBaka Native
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES

@@ -8,7 +8,7 @@ final class NavigationTests: XCTestCase {
         XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 10))
         capture("Home-English")
         app.tabBars.buttons["Library"].tap()
-        XCTAssertTrue(app.staticTexts["Coming in a future update"].exists)
+        XCTAssertTrue(app.buttons["Sign in"].waitForExistence(timeout: 5))
         app.tabBars.buttons["Profile"].tap()
         app.buttons["Settings"].tap()
         XCTAssertTrue(app.staticTexts["Language"].waitForExistence(timeout: 5))

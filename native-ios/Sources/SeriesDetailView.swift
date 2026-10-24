@@ -111,7 +111,7 @@ struct SeriesDetailView: View {
     }
     @ViewBuilder private func content(_ tab: DetailTab) -> some View {
         if tab == .info {
-            if let series = model.series { SeriesInfoView(series: series, links: model.lists[.info]?.rows ?? [], tagPaths: model.tagPaths, openURL: { web = WebPage(url: $0) }) }
+            if let series = model.series { SeriesLibraryPanel(series: series); SeriesInfoView(series: series, links: model.lists[.info]?.rows ?? [], tagPaths: model.tagPaths, openURL: { web = WebPage(url: $0) }) }
         } else if let list = model.lists[tab] {
             Text(LocalizedStringKey(tab.rawValue)).font(.headline)
             if tab == .covers { covers(list.rows) }
