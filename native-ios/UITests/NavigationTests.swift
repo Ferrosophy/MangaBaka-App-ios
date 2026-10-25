@@ -4,7 +4,7 @@ final class NavigationTests: XCTestCase {
     func testEnglishNavigation() {
         let app = XCUIApplication()
         app.launchArguments = ["-language", "en"]
-        app.launch()
+        app.launchArguments += ["-startPage", "0"]; app.launch()
         XCTAssertTrue(app.tabBars.buttons["Home"].waitForExistence(timeout: 10))
         capture("Home-English")
         app.tabBars.buttons["Library"].tap()
@@ -17,7 +17,7 @@ final class NavigationTests: XCTestCase {
     func testChineseNavigation() {
         let app = XCUIApplication()
         app.launchArguments = ["-language", "zh-Hans"]
-        app.launch()
+        app.launchArguments += ["-startPage", "0"]; app.launch()
         XCTAssertTrue(app.tabBars.buttons["首页"].waitForExistence(timeout: 10))
         capture("Home-Chinese")
         app.tabBars.buttons["我的"].tap()

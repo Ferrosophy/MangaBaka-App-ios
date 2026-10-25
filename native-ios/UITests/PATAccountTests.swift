@@ -49,7 +49,7 @@ final class PATAccountTests: XCTestCase {
     private func launch(language: String) -> XCUIApplication {
         let app = XCUIApplication(); app.launchArguments = ["-language", language]
         app.launchEnvironment = ["M3_ACCOUNT_FIXTURES": "1", "M2_FIXTURES": "1"]
-        app.launch(); XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10)); return app
+        app.launchArguments += ["-startPage", "0"]; app.launch(); XCTAssertTrue(app.tabBars.firstMatch.waitForExistence(timeout: 10)); return app
     }
     private func connect(_ app: XCUIApplication, library: String, signIn: String) {
         app.tabBars.buttons[library].tap(); app.buttons[signIn].tap()

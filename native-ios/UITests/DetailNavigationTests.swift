@@ -9,7 +9,7 @@ final class DetailNavigationTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-language", "en"]
         app.launchEnvironment = ["M2_DETAIL": "1677", "M2_FIXTURES": "1"]
-        app.launch()
+        app.launchArguments += ["-startPage", "0"]; app.launch()
         XCTAssertTrue(app.buttons["detail-tab-Info"].firstMatch.waitForExistence(timeout: 15))
         let tabs = app.scrollViews["detail-tabs"].firstMatch
         app.buttons["Preview cover"].firstMatch.tap()
@@ -59,7 +59,7 @@ final class DetailNavigationTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-language", language]
         app.launchEnvironment = ["M2_DETAIL": "1677", "M2_FIXTURES": "1"]
-        app.launch()
+        app.launchArguments += ["-startPage", "0"]; app.launch()
         XCTAssertTrue(app.buttons["detail-tab-Info"].firstMatch.waitForExistence(timeout: 15))
         let tabs = app.scrollViews["detail-tabs"].firstMatch
         for tab in ["Info", "Covers", "Related", "Similar", "News", "Collections", "Works"] {

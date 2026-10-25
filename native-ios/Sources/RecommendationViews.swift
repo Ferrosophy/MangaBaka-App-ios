@@ -157,6 +157,9 @@ struct DiscoveryQueueView: View {
                 let key = "\(auth.generation)|\(preferences.policyKey)"
                 if queueKey != key || !loaded { queueKey = key; await start() }
             }
+            .onChange(of: library.entries.map(\.id)) {
+                if !writing, let card = current, library.entries.contains(where: { $0.id == card.id }) { index += 1 }
+            }
             .confirmationDialog("Mark as completed?", isPresented: $confirmCompleted, titleVisibility: .visible) { Button("Complete and fill known progress") { save(.completed, fill: true) } }
     }
     private var defaultStatus: ReadingStatus { ReadingStatus(rawValue: preferences.defaultState) ?? .planToRead }

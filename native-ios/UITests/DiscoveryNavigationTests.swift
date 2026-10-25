@@ -1,6 +1,7 @@
 import XCTest
 
 final class DiscoveryNavigationTests: XCTestCase {
+    override func setUp() { continueAfterFailure = false }
     func testBrowseNewsMixAndSettings() {
         let app = XCUIApplication()
         app.launchArguments = ["-language", "en", "-startPage", "0"]
@@ -36,7 +37,7 @@ final class DiscoveryNavigationTests: XCTestCase {
     func testChineseBrowseAndLoggedOutQueue() {
         let app = XCUIApplication(); app.launchArguments = ["-language", "zh-Hans", "-startPage", "2"]
         app.launchEnvironment["M4_FIXTURES"] = "1"; app.launch()
-        XCTAssertTrue(app.staticTexts["漫画"].waitForExistence(timeout: 8))
+        XCTAssertTrue(app.staticTexts["日漫"].waitForExistence(timeout: 8))
         capture("M4-Browse-Chinese")
         app.buttons["发现队列"].tap()
         XCTAssertTrue(app.buttons["登录"].waitForExistence(timeout: 5))

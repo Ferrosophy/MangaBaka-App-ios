@@ -61,8 +61,8 @@ struct SeriesDetailView: View {
         .task(id: selected) { await loadSelected() }
         .sheet(item: $web) { SafariView(url: $0.url).ignoresSafeArea() }
         .overlay(alignment: .bottom) { if preferences.blurredRatings.contains(contentRating ?? "") && !revealCover { Button("Reveal covers temporarily") { revealCover = true }.buttonStyle(.borderedProminent).padding() } }
-        .environment(\.coverRating, revealCover ? "safe" : contentRating)
-        .fullScreenCover(item: $gallery) { presentation in ImageViewer(items: presentation.items, selected: presentation.selectedID).environment(preferences).environment(\.coverRating, revealCover ? "safe" : contentRating) }
+        .environment(\.coverRating, revealCover ? nil : contentRating)
+        .fullScreenCover(item: $gallery) { presentation in ImageViewer(items: presentation.items, selected: presentation.selectedID).environment(preferences).environment(\.coverRating, revealCover ? nil : contentRating) }
         .accessibilityIdentifier("series-detail")
     }
     private func selectTab(_ tab: DetailTab) {

@@ -37,6 +37,20 @@ final class DiscoveryTests: XCTestCase {
         let article = NewsArticle(record: DetailRecord(["id": 3, "title": "News", "url": "javascript:alert(1)", "mentioned_series": [1, 2], "series": [["id": 1, "title": "One", "content_rating": "safe"]]]))
         XCTAssertNil(article.url); XCTAssertEqual(article.total, 2); XCTAssertEqual(article.series.count, 1)
     }
+    func testCapturedV2Contracts() throws {
+        for name in ["m4-v2-series-search", "m4-v2-series-mix", "m4-v2-news", "m4-v1-series-mix-seeds", "m4-v1-tags"] {
+            let url = try XCTUnwrap(Bundle.main.url(forResource: name, withExtension: "json"))
+            let page = try DetailPage.decode(Data(contentsOf: url))
+            XCTAssertFalse(page.records.isEmpty, name)
+            if name.contains("news") {
+                let article = NewsArticle(record: page.records[0]); XCTAssertNotNil(article.url); XCTAssertFalse(article.series.isEmpty)
+            } else if !name.contains("tags") {
+                let first = page.records[0]
+                let card = try XCTUnwrap(first.object("series").card ?? first.card)
+                XCTAssertNotNil(card.image); XCTAssertNotNil(card.contentRating)
+            }
+        }
+    }
     @MainActor func testRefreshAndDeduplication() async throws {
         setenv("M4_FIXTURES", "1", 1); defer { unsetenv("M4_FIXTURES") }
         let list = DiscoveryList()

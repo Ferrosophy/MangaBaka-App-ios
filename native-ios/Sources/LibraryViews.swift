@@ -39,7 +39,7 @@ struct LibraryView: View {
     private var rows: [LibraryEntry] {
         library.entries.filter { $0.state == status && preferences.allows($0.contentRating) && (query.isEmpty || ([$0.title] + Array($0.localizedTitles.values) + $0.aliases).contains { $0.localizedCaseInsensitiveContains(query) }) }.sorted {
             switch sort {
-            case "title": return $0.displayTitle(locale).localizedStandardCompare($1.displayTitle(locale)) == .orderedAscending
+            case "title": return preferences.title($0).localizedStandardCompare(preferences.title($1)) == .orderedAscending
             case "rating": return $0.rating == $1.rating ? $0.title < $1.title : ($0.rating ?? -1) > ($1.rating ?? -1)
             case "created": return ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast)
             default: return ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast)

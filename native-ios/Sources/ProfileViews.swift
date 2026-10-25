@@ -90,6 +90,7 @@ struct BackupDocument: FileDocument {
     func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper { FileWrapper(regularFileWithContents: data) }
 }
 struct BackupView: View {
+    @Environment(Preferences.self) private var preferences
     @Environment(AuthSession.self) private var auth
     @Environment(LibraryRepository.self) private var library
     @Environment(\.dismiss) private var dismiss
@@ -120,7 +121,7 @@ struct BackupView: View {
                         LabeledContent("New series", value: "\(backup.entries.filter { e in !library.entries.contains { $0.id == e.id } }.count)")
                         Text("Existing cloud records are kept unless you select them below. Cloud-only records are never removed.").font(.footnote)
                         ForEach(backup.entries.filter { e in library.entries.contains { $0.id == e.id } }) { e in
-                            Toggle(e.displayTitle(locale), isOn: Binding(get: { overwrite.contains(e.id) }, set: { if $0 { overwrite.insert(e.id) } else { overwrite.remove(e.id) } }))
+                            Toggle(preferences.title(e), isOn: Binding(get: { overwrite.contains(e.id) }, set: { if $0 { overwrite.insert(e.id) } else { overwrite.remove(e.id) } }))
                         }
                         Button("Restore to cloud") { confirm = true }.disabled(!library.canWrite || running)
                     }
