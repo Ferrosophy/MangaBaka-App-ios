@@ -188,4 +188,11 @@ private final class TestURLProtocol: URLProtocol {
         XCTAssertEqual(ReadingNumber.string(12.125), "12.125")
     }
 
+    func testNullProfileNamesFallBackToNicknameOrAccountID() throws {
+        let profile = try AccountProfile.parse(["data": ["id": "A", "preferred_username": NSNull(), "nickname": "Reader"]])
+        XCTAssertEqual(profile.name, "Reader")
+        let unnamed = try AccountProfile.parse(["data": ["id": "A", "preferred_username": NSNull(), "nickname": NSNull()]])
+        XCTAssertEqual(unnamed.name, "A")
+    }
+
 }

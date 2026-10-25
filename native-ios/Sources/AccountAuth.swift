@@ -21,7 +21,8 @@ struct AccountProfile: Codable, Equatable {
         let d = object["data"] as? [String: Any] ?? object
         let id = HomeCard.string(d["id"] ?? d["sub"])
         guard !id.isEmpty else { throw AccountError.message("The server did not return an account ID.") }
-        return Self(id: id, name: HomeCard.string(d["preferred_username"] ?? d["nickname"] ?? d["name"] ?? d["username"] ?? d["handle"] ?? id), avatar: ["avatar", "avatar_url", "picture", "image", "profile_picture"].compactMap { Self.avatarURL(d[$0]) }.first)
+        let name = ["preferred_username", "nickname", "name", "username", "handle"].compactMap { d[$0] as? String }.first { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } ?? id
+        return Self(id: id, name: name, avatar: ["avatar", "avatar_url", "picture", "image", "profile_picture"].compactMap { Self.avatarURL(d[$0]) }.first)
     }
     static func avatarURL(_ value: Any?) -> URL? {
         if let raw = value as? String, !raw.isEmpty {

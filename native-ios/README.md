@@ -21,7 +21,7 @@ JSON backups contain reading history and cached metadata, never the PAT. They pr
 
 ## Build and checks
 
-`brew install xcodegen && xcodegen generate` then build scheme MangaBakaNative. `.github/workflows/native-ios-m2.yml` on the M3 branch is named Native iOS M3 and supports **manual dispatch only**. The registered workflow path is retained so main need not change. It captures public API samples, builds an unsigned arm64 IPA and runs unit/simulator tests.
+`brew install xcodegen && xcodegen generate` then build scheme MangaBakaNative. `.github/workflows/native-ios-m2.yml` on the M3 branch is named Native iOS M3 and supports **manual dispatch only**. `test_scope=full` is the default; `unit` is available for a small follow-up data change after the UI regression has already passed. The registered workflow path is retained so main need not change. It captures public API samples, builds an unsigned arm64 IPA and runs unit/simulator tests.
 
 Simulator review tests use a synthetic PAT and local mock API, exercising login and account UI/edits without touching real accounts. The review transport and memory-vault entry point compile **only for DEBUG simulator**, never Release/device IPA. Tests are not proof of real PAT account/device verification. Enter a real token **inside the installed app**, not in chat or GitHub, to verify actual account login, cross-device sync and Keychain persistence. No real user token has been used in CI.
 

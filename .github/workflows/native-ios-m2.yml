@@ -1,6 +1,15 @@
 name: Native iOS M3
 'on':
-  workflow_dispatch: null
+  workflow_dispatch:
+    inputs:
+      test_scope:
+        description: Full regression, or unit checks after an already-passed UI run
+        type: choice
+        options:
+        - full
+        - unit
+        default: full
+        required: true
 permissions:
   contents: read
 concurrency:
@@ -131,12 +140,22 @@ jobs:
       timeout-minutes: 15
       run: 'set -euo pipefail
 
-        xcodebuild test -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance
-        120 -maximum-test-execution-time-allowance 300 -project MangaBakaNative.xcodeproj
-        -scheme MangaBakaNative -destination "platform=iOS Simulator,id=$M3_SIMULATOR"
-        -destination-timeout 90 -resultBundlePath TestResults.xcresult CODE_SIGNING_ALLOWED=NO
+        TEST_SELECTION=()
+
+        if [[ "$TEST_SCOPE" == "unit" ]]; then TEST_SELECTION=(-only-testing:MangaBakaNativeTests);
+        fi
+
+        echo "Verification scope: $TEST_SCOPE"
+
+        xcodebuild test "${TEST_SELECTION[@]}" -parallel-testing-enabled NO -test-timeouts-enabled
+        YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance
+        300 -project MangaBakaNative.xcodeproj -scheme MangaBakaNative -destination
+        "platform=iOS Simulator,id=$M3_SIMULATOR" -destination-timeout 90 -resultBundlePath
+        TestResults.xcresult CODE_SIGNING_ALLOWED=NO
 
         '
+      env:
+        TEST_SCOPE: ${{ inputs.test_scope }}
     - name: Export review screenshots
       if: always()
       run: xcrun xcresulttool export attachments --path TestResults.xcresult --output-path
