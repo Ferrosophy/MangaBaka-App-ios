@@ -17,36 +17,43 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
     var localizedTitles: [String: String]
     var aliases: [String]
     var coverURL: URL?
-    var totalChapters: Int?
-    var totalVolumes: Int?
+    var totalChapters: Double?
+    var totalVolumes: Double?
     var state: ReadingStatus
-    var chapters: Int
-    var volumes: Int
+    var chapters: Double
+    var volumes: Double
     var rereads: Int
-    var rating: Int?
+    var rating: Double?
     var note: String? = nil
-    var createdAt: Date
-    var updatedAt: Date
+    var createdAt: Date?
+    var updatedAt: Date?
     func displayTitle(_ locale: Locale) -> String { localizedTitles[locale.identifier.hasPrefix("zh") ? "zh" : "en"] ?? title }
     var percentage: Double? {
         if let n = totalChapters, n > 0 { return min(1, Double(chapters) / Double(n)) }
         if let n = totalVolumes, n > 0 { return min(1, Double(volumes) / Double(n)) }
         return nil
     }
-    static func parse(_ row: [String: Any]) throws -> Self {
+    static func parse(_ source: [String: Any]) throws -> Self {
+        // v2 separates tracking (entry) and metadata (series); accept old backups too.
+        var row = source["entry"] as? [String: Any] ?? source
+        if let series = source["series"] as? [String: Any] { row["Series"] = series }
         guard let series = (row["Series"] ?? row["series"]) as? [String: Any], let card = HomeCard.parse(series, shelf: .trending), Int(card.id) != nil,
               let state = ReadingStatus(rawValue: HomeCard.string(row["state"])), !HomeCard.string(row["id"]).isEmpty else { throw AccountError.message("The server returned an incomplete library record. Cached data was preserved.") }
-        func number(_ key: String) throws -> Int {
+        func number(_ key: String) throws -> Double {
             guard let v = row[key], !(v is NSNull) else { return 0 }
-            guard let n = Int(HomeCard.string(v)), n >= 0, n <= 10_000_000 else { throw AccountError.message("The server returned an invalid reading record.") }; return n
+            guard let n = Double(HomeCard.string(v)), n.isFinite, n >= 0, n <= (key == "number_of_rereads" ? 1000 : 10000) else { throw AccountError.message("The server returned an invalid reading record.") }; return n
         }
-        let rating = row["rating"] is NSNull || row["rating"] == nil ? nil : Int(HomeCard.string(row["rating"]))
+        let rawRating = row["rating"] is NSNull || row["rating"] == nil ? nil : Double(HomeCard.string(row["rating"]))
+        if row["rating"] != nil && !(row["rating"] is NSNull) && rawRating == nil { throw AccountError.message("The server returned an invalid rating.") }
+        let rating = rawRating == 0 ? nil : rawRating
         if let rating, !(0...100).contains(rating) { throw AccountError.message("The server returned an invalid rating.") }
-        guard let created = Self.date(HomeCard.string(row["created_at"])), let updated = Self.date(HomeCard.string(row["updated_at"])) else { throw AccountError.message("The server returned an invalid record timestamp.") }
+        let created = Self.date(HomeCard.string(row["created_at"])), updated = Self.date(HomeCard.string(row["updated_at"]))
+        let rereads = try number("number_of_rereads")
+        guard rereads.rounded() == rereads else { throw AccountError.message("The server returned an invalid reading record.") }
         return Self(remoteID: HomeCard.string(row["id"]), seriesID: card.id, title: card.title, localizedTitles: card.localizedTitles,
                     aliases: (series["titles"] as? [[String: Any]] ?? []).compactMap { $0["title"] as? String }, coverURL: card.image,
-                    totalChapters: Int(HomeCard.string(series["total_chapters"])), totalVolumes: Int(HomeCard.string(series["final_volume"])), state: state,
-                    chapters: try number("progress_chapter"), volumes: try number("progress_volume"), rereads: try number("number_of_rereads"), rating: rating, note: row["note"] as? String, createdAt: created, updatedAt: updated)
+                    totalChapters: Double(HomeCard.string(series["total_chapters"])), totalVolumes: Double(HomeCard.string(series["final_volume"])), state: state,
+                    chapters: try number("progress_chapter"), volumes: try number("progress_volume"), rereads: Int(rereads), rating: rating, note: row["note"] as? String, createdAt: created, updatedAt: updated)
     }
     static func date(_ raw: String) -> Date? {
         let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -54,11 +61,11 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
     }
     static func draft(series: DetailRecord, state: ReadingStatus) -> Self {
         let card = series.card
-        return Self(remoteID: "", seriesID: series.id, title: card?.title ?? series.text("title"), localizedTitles: card?.localizedTitles ?? [:], aliases: [], coverURL: series.cover, totalChapters: Int(series.text("total_chapters")), totalVolumes: Int(series.text("final_volume")), state: state, chapters: 0, volumes: 0, rereads: 0, rating: nil, createdAt: Date(), updatedAt: Date())
+        return Self(remoteID: "", seriesID: series.id, title: card?.title ?? series.text("title"), localizedTitles: card?.localizedTitles ?? [:], aliases: [], coverURL: series.cover, totalChapters: Double(series.text("total_chapters")), totalVolumes: Double(series.text("final_volume")), state: state, chapters: 0, volumes: 0, rereads: 0, rating: nil, createdAt: Date(), updatedAt: Date())
     }
     var writeBody: [String: Any] { ["state": state.rawValue, "progress_chapter": chapters, "progress_volume": volumes, "number_of_rereads": rereads, "rating": rating.map { $0 as Any } ?? NSNull(), "note": note.map { $0 as Any } ?? NSNull()] }
     func validateBackup() throws {
-        guard Int(seriesID).map({ $0 > 0 }) == true, (0...10_000_000).contains(chapters), (0...10_000_000).contains(volumes), (0...10_000_000).contains(rereads), rating.map({ (0...100).contains($0) }) ?? true,
+        guard Int(seriesID).map({ $0 > 0 }) == true, (0...10000).contains(chapters), (0...10000).contains(volumes), (0...1000).contains(rereads), rating.map({ (0...100).contains($0) }) ?? true,
               !title.isEmpty, totalChapters.map({ $0 >= 0 }) ?? true, totalVolumes.map({ $0 >= 0 }) ?? true else { throw AccountError.message("The backup contains an invalid reading record.") }
     }
 }
@@ -133,7 +140,7 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
     private func fetchAll(epoch: UUID) async throws -> [LibraryEntry] {
         var all: [LibraryEntry] = [], seen = Set<String>()
         for page in 1...1000 {
-            let data = try await auth.request(path: "my/library?page=\(page)&limit=100&sort_by=updated_at_desc")
+            let data = try await auth.request(path: "my/library?page=\(page)&limit=100&sort_by=updated_at_desc&schema=full", version: 2)
             guard epoch == auth.generation else { throw AccountError.stale }
             guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any], let rows = root["data"] as? [[String: Any]] else { throw AccountError.message("Unable to read the cloud library. Cached data was preserved.") }
             for row in rows {
@@ -141,7 +148,10 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
                 guard seen.insert(entry.id).inserted else { throw AccountError.message("The cloud library changed during sync. Refresh to try again.") }
                 all.append(entry)
             }
-            if rows.count < 100 { return all }
+            if let pagination = root["pagination"] as? [String: Any], pagination.keys.contains("next") {
+                if pagination["next"] is NSNull { return all }
+                guard pagination["next"] is String, !rows.isEmpty else { throw AccountError.message("The library sync is incomplete. Cached data was preserved.") }
+            } else if rows.count < 100 { return all }
         }
         throw AccountError.message("The library sync is incomplete. Cached data was preserved.")
     }
@@ -150,14 +160,13 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
         writing = true; defer { writing = false }
         try await performSave(entry, create: create)
     }
-    private func performSave(_ entry: LibraryEntry, create: Bool) async throws {
+    private func performSave(_ original: LibraryEntry, create: Bool) async throws {
+        var entry = original; if entry.rating == 0 { entry.rating = nil }
         try entry.validateBackup()
         let epoch = auth.generation
         do {
-            // Existing records accept partial PUTs; create then populate all fields.
-            if create { _ = try await auth.request(path: "my/library/\(entry.id)", method: "POST", body: ["state": entry.state.rawValue]) }
             let body = Self.changedFields(entry, previous: create ? nil : entries.first { $0.id == entry.id })
-            if !body.isEmpty { _ = try await auth.request(path: "my/library/\(entry.id)", method: "PUT", body: body) }
+            if !body.isEmpty { _ = try await auth.request(path: "my/library/\(entry.id)", method: create ? "POST" : "PATCH", body: body) }
         } catch {
             // A timeout may follow a committed write. Read back before offering a retry.
             if let all = try? await fetchAll(epoch: epoch), auth.generation == epoch {
@@ -167,7 +176,7 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
             throw error
         }
         guard auth.generation == epoch else { throw AccountError.stale }
-        var next = entry; next.updatedAt = Date()
+        var next = entry; next.updatedAt = Date(); if next.rating == 0 { next.rating = nil }
         entries.removeAll { $0.id == entry.id }; entries.append(next)
         do { try persist() } catch { self.error = "Saved to cloud. Refresh to rebuild the local cache." }
     }
@@ -213,14 +222,14 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
 struct LibraryStatistics {
     let entries: [LibraryEntry]
     var total: Int { entries.count }
-    var chapters: Int { entries.reduce(0) { $0 + $1.chapters } }
-    var volumes: Int { entries.reduce(0) { $0 + $1.volumes } }
+    var chapters: Double { entries.reduce(0) { $0 + $1.chapters } }
+    var volumes: Double { entries.reduce(0) { $0 + $1.volumes } }
     var rereads: Int { entries.reduce(0) { $0 + $1.rereads } }
     var completed: Int { entries.filter { $0.state == .completed }.count }
     var completion: Double { total == 0 ? 0 : Double(completed) / Double(total) * 100 }
     var finish: Double { let n = completed + entries.filter { $0.state == .dropped }.count; return n == 0 ? 0 : Double(completed) / Double(n) * 100 }
-    var mean: Double? { let scores = entries.compactMap(\.rating); return scores.isEmpty ? nil : Double(scores.reduce(0,+)) / Double(scores.count) }
-    var highest: LibraryEntry? { entries.filter { $0.rating != nil }.sorted { $0.rating == $1.rating ? $0.title < $1.title : ($0.rating ?? 0) > ($1.rating ?? 0) }.first }
+    var mean: Double? { let scores = entries.compactMap(\.rating).filter { $0 > 0 }; return scores.isEmpty ? nil : scores.reduce(0,+) / Double(scores.count) }
+    var highest: LibraryEntry? { entries.filter { ($0.rating ?? 0) > 0 }.sorted { $0.rating == $1.rating ? $0.title < $1.title : ($0.rating ?? 0) > ($1.rating ?? 0) }.first }
     var mostReread: LibraryEntry? { entries.filter { $0.rereads > 0 }.sorted { $0.rereads == $1.rereads ? $0.title < $1.title : $0.rereads > $1.rereads }.first }
 }
 struct LibraryBackup: Codable {
@@ -235,4 +244,8 @@ struct LibraryBackup: Codable {
         try backup.entries.forEach { try $0.validateBackup() }
         return backup
     }
+}
+
+enum ReadingNumber {
+    static func string(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0...2)).grouping(.never)) }
 }

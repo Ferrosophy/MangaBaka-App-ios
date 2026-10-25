@@ -8,48 +8,50 @@ settings:
   base:
     SWIFT_VERSION: '5.0'
     TARGETED_DEVICE_FAMILY: '1'
-    CODE_SIGNING_ALLOWED: NO
-    MARKETING_VERSION: '0.3.0'
-    CURRENT_PROJECT_VERSION: '2'
+    CODE_SIGNING_ALLOWED: false
+    MARKETING_VERSION: 0.3.0
+    CURRENT_PROJECT_VERSION: '3'
 targets:
   MangaBakaNative:
     type: application
     platform: iOS
-    sources: [Sources]
+    sources:
+    - Sources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: dev.ferrosophy.mangabaka.native
-        GENERATE_INFOPLIST_FILE: NO
+        GENERATE_INFOPLIST_FILE: false
         INFOPLIST_FILE: Info.plist
-        MANGABAKA_CLIENT_ID: ''
-        MANGABAKA_REDIRECT_URI: 'dev.ferrosophy.mangabaka.native://oauthredirect'
-        MANGABAKA_CALLBACK_SCHEME: 'dev.ferrosophy.mangabaka.native'
         INFOPLIST_KEY_CFBundleDisplayName: MangaBaka Native
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: true
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: true
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
   MangaBakaNativeTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [Tests]
+    sources:
+    - Tests
     dependencies:
-      - target: MangaBakaNative
+    - target: MangaBakaNative
     settings:
       base:
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: true
   MangaBakaNativeUITests:
     type: bundle.ui-testing
     platform: iOS
-    sources: [UITests]
+    sources:
+    - UITests
     dependencies:
-      - target: MangaBakaNative
+    - target: MangaBakaNative
     settings:
       base:
-        GENERATE_INFOPLIST_FILE: YES
+        GENERATE_INFOPLIST_FILE: true
 schemes:
   MangaBakaNative:
     build:
       targets:
         MangaBakaNative: all
     test:
-      targets: [MangaBakaNativeTests, MangaBakaNativeUITests]
+      targets:
+      - MangaBakaNativeTests
+      - MangaBakaNativeUITests

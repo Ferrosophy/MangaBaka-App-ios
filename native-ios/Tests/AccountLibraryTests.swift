@@ -14,16 +14,17 @@ private final class TestURLProtocol: URLProtocol {
 }
 @MainActor private final class MemoryVault: CredentialVault {
     var value: SessionCredentials?
+    var failSave = false
     init(_ value: SessionCredentials?) { self.value = value }
     func load() -> SessionCredentials? { value }
-    func save(_ value: SessionCredentials) { self.value = value }
+    func save(_ value: SessionCredentials) throws { if failSave { throw AccountError.message("Unable to save your session securely.") }; self.value = value }
     func clear() { value = nil }
 }
 @MainActor final class AccountLibraryTests: XCTestCase {
-    private func session(expired: Bool = false) -> (AuthSession, MemoryVault) {
+    private func session() -> (AuthSession, MemoryVault) {
         let configuration = URLSessionConfiguration.ephemeral; configuration.protocolClasses = [TestURLProtocol.self]
-        let vault = MemoryVault(SessionCredentials(access: "test-access", refresh: "test-refresh", expires: Date().addingTimeInterval(expired ? -30 : 3600), profile: AccountProfile(id: "A", name: "Test", avatar: nil)))
-        return (AuthSession(configuration: OAuthConfiguration(clientID: "test-client", redirect: URL(string: "test-app://oauthredirect")), transport: URLSession(configuration: configuration), vault: vault), vault)
+        let vault = MemoryVault(SessionCredentials(access: "mb-test-access", profile: AccountProfile(id: "A", name: "Test", avatar: nil)))
+        return (AuthSession(transport: URLSession(configuration: configuration), vault: vault), vault)
     }
     private func row(_ id: Int = 1) -> [String: Any] {
         ["id": "entry-\(id)", "state": "completed", "progress_chapter": 83, "progress_volume": 8, "number_of_rereads": 0, "rating": 65,
@@ -35,26 +36,62 @@ private final class TestURLProtocol: URLProtocol {
         // ModelContext retains its container.
         return LibraryRepository(auth: auth, context: ModelContext(container))
     }
-    func testConcurrentRefreshUsesOneRequestAndKeepsRefreshToken() async throws {
-        let (auth, vault) = session(expired: true)
-        let lock = NSLock(); var calls = 0
+    func testPATSignInValidatesProfileBeforeSecurePersistence() async throws {
+        let c = URLSessionConfiguration.ephemeral; c.protocolClasses = [TestURLProtocol.self]
+        let vault = MemoryVault(nil), response = try data(["data": ["id": "A", "preferred_username": "Test", "auth_type": "pat"]])
+        let auth = AuthSession(transport: URLSession(configuration: c), vault: vault)
         TestURLProtocol.handler = { request in
-            lock.lock(); calls += 1; lock.unlock()
-            return (200, try JSONSerialization.data(withJSONObject: ["access_token": "renewed", "expires_in": 3600]))
+            XCTAssertEqual(request.url?.path, "/v1/my/profile")
+            XCTAssertEqual(request.value(forHTTPHeaderField: "x-api-key"), "mb-example-pat")
+            XCTAssertNil(request.value(forHTTPHeaderField: "Authorization"))
+            return (200, response)
         }
-        async let a = auth.token(); async let b = auth.token()
-        let results = try await [a,b]
-        XCTAssertEqual(results, ["renewed", "renewed"]); XCTAssertEqual(calls, 1); XCTAssertEqual(vault.value?.refresh, "test-refresh")
+        try await auth.signIn(personalAccessToken: "  mb-example-pat\n")
+        XCTAssertTrue(auth.isAuthenticated); XCTAssertEqual(vault.value?.access, "mb-example-pat"); XCTAssertEqual(auth.profile?.id, "A")
     }
-    func testUnauthorizedRetriesOnceThenExpires() async throws {
-        let (auth, _) = session()
-        var requests = 0
+    func testUnauthorizedPATExpiresWithoutRefreshOrRetry() async throws {
+        let (auth, vault) = session(); var requests = 0
         TestURLProtocol.handler = { request in
-            if request.url!.path.hasSuffix("/token") { return (200, try JSONSerialization.data(withJSONObject: ["access_token": "renewed", "expires_in": 3600])) }
+            XCTAssertFalse(request.url!.path.contains("oauth")); XCTAssertEqual(request.value(forHTTPHeaderField: "x-api-key"), "mb-test-access")
             requests += 1; return (401, Data())
         }
         do { _ = try await auth.request(path: "my/profile"); XCTFail("Expected expiry") } catch { XCTAssertTrue(auth.needsLogin) }
-        XCTAssertEqual(requests, 2)
+        XCTAssertEqual(requests, 1); XCTAssertNil(vault.value); XCTAssertFalse(auth.isAuthenticated)
+    }
+    func testNetworkAndPermissionErrorsKeepSavedToken() async throws {
+        let (auth, vault) = session()
+        TestURLProtocol.handler = { _ in throw URLError(.notConnectedToInternet) }
+        do { _ = try await auth.request(path: "my/profile"); XCTFail("Expected network error") } catch {}
+        XCTAssertTrue(auth.isAuthenticated); XCTAssertNotNil(vault.value)
+        TestURLProtocol.handler = { _ in (403, Data()) }
+        do { _ = try await auth.request(path: "my/profile"); XCTFail("Expected permission error") } catch {}
+        XCTAssertTrue(auth.isAuthenticated); XCTAssertNotNil(vault.value)
+    }
+    func testFailedCredentialSaveDoesNotAuthenticate() async throws {
+        let c = URLSessionConfiguration.ephemeral; c.protocolClasses = [TestURLProtocol.self]
+        let vault = MemoryVault(nil); vault.failSave = true
+        let auth = AuthSession(transport: URLSession(configuration: c), vault: vault)
+        let response = try data(["data": ["id": "A", "auth_type": "pat"]])
+        TestURLProtocol.handler = { _ in (200, response) }
+        do { try await auth.signIn(personalAccessToken: "mb-example-pat"); XCTFail("Expected storage error") } catch {}
+        XCTAssertFalse(auth.isAuthenticated); XCTAssertNil(vault.value)
+    }
+    func testInvalidProfileNeverSavesToken() async throws {
+        let c = URLSessionConfiguration.ephemeral; c.protocolClasses = [TestURLProtocol.self]
+        let vault = MemoryVault(nil)
+        let auth = AuthSession(transport: URLSession(configuration: c), vault: vault)
+        TestURLProtocol.handler = { _ in (200, Data("{\"data\":{}}".utf8)) }
+        do { try await auth.signIn(personalAccessToken: "mb-example-pat"); XCTFail("Expected profile error") } catch {}
+        XCTAssertFalse(auth.isAuthenticated); XCTAssertNil(vault.value)
+    }
+    func testLogoutInvalidatesInFlightResponse() async throws {
+        let (auth, _) = session(); let started = expectation(description: "request started"), gate = DispatchSemaphore(value: 0)
+        TestURLProtocol.handler = { _ in started.fulfill(); _ = gate.wait(timeout: .now()+5); return (200, Data("{}".utf8)) }
+        let request = Task { try await auth.request(path: "my/profile") }
+        await fulfillment(of: [started], timeout: 3)
+        try auth.logout(); gate.signal()
+        do { _ = try await request.value; XCTFail("Old account response must be rejected") } catch AccountError.stale {} catch { XCTFail("Expected stale-account error") }
+        XCTAssertFalse(auth.isAuthenticated)
     }
     func testFailedPagePreservesExistingLibrary() async throws {
         let (auth, _) = session(); let library = try repository(auth)
@@ -93,7 +130,7 @@ private final class TestURLProtocol: URLProtocol {
         var a = try LibraryEntry.parse(row()); var b = a; b.seriesID = "2"; b.state = .dropped; b.rating = nil
         var c = a; c.seriesID = "3"; c.state = .reading; c.rating = 0; a.rereads = 2
         let s = LibraryStatistics(entries: [a,b,c])
-        XCTAssertEqual(s.completion, 100.0/3, accuracy: 0.001); XCTAssertEqual(s.finish, 50); XCTAssertEqual(s.mean, 32.5); XCTAssertEqual(s.rereads, 2)
+        XCTAssertEqual(s.completion, 100.0/3, accuracy: 0.001); XCTAssertEqual(s.finish, 50); XCTAssertEqual(s.mean, 65); XCTAssertEqual(s.rereads, 2)
         XCTAssertEqual(s.chapters, 249); XCTAssertEqual(s.highest?.id, "1")
     }
     func testBackupRoundTripAndDuplicateRejection() throws {
@@ -103,25 +140,40 @@ private final class TestURLProtocol: URLProtocol {
         let duplicate = LibraryBackup(version: 1, exportedAt: Date(), accountName: "Test", entries: [entry, entry])
         XCTAssertThrowsError(try LibraryBackup.decode(JSONEncoder().encode(duplicate)))
     }
-    func testUnknownTotalsAndZeroScoreArePreserved() throws {
+    func testUnknownTotalsAndZeroScoreIsUnrated() throws {
         var e = try LibraryEntry.parse(row()); e.totalChapters = nil; e.totalVolumes = nil; e.rating = 0
-        XCTAssertNil(e.percentage); XCTAssertEqual(LibraryStatistics(entries: [e]).mean, 0)
+        XCTAssertNil(e.percentage); XCTAssertNil(LibraryStatistics(entries: [e]).mean)
     }
     func testPartialUpdateDoesNotOverwriteOtherFields() throws {
         let before = try LibraryEntry.parse(row()); var after = before
         after.chapters = 82
         let fields = LibraryRepository.changedFields(after, previous: before)
-        XCTAssertEqual(fields.count, 1); XCTAssertEqual(fields["progress_chapter"] as? Int, 82)
+        XCTAssertEqual(fields.count, 1); XCTAssertEqual(fields["progress_chapter"] as? Double, 82)
         XCTAssertNil(fields["rating"]); XCTAssertNil(fields["state"])
     }
     func testClearScoreSendsExplicitNull() throws {
         let before = try LibraryEntry.parse(row()); var after = before; after.rating = nil
         XCTAssertTrue(LibraryRepository.changedFields(after, previous: before)["rating"] is NSNull)
     }
-    func testPKCEVerifierAndConfiguration() throws {
-        let a = try AuthSession.random(), b = try AuthSession.random()
-        XCTAssertEqual(a.count, 43); XCTAssertNotEqual(a, b); XCTAssertFalse(a.contains("="))
-        XCTAssertFalse(OAuthConfiguration(clientID: "", redirect: URL(string: "app://oauthredirect")).valid)
-        XCTAssertFalse(OAuthConfiguration(clientID: "client", redirect: URL(string: "https://example.com")).valid)
+    func testPATFormatRejectsHeaderInjectionAndOAuthTokens() throws {
+        XCTAssertTrue(AuthSession.validPAT("mb-example-token"))
+        for invalid in ["", "mb-", "Bearer example", "mb-token\nInjected: header", "mb-token with spaces", "mb-é", String(repeating: "x", count: 5000)] { XCTAssertFalse(AuthSession.validPAT(invalid)) }
+    }
+    func testV2LibraryEnvelopePreservesFractionalProgressAndUnknownDates() throws {
+        var flat = row(); let series = flat.removeValue(forKey: "Series")!
+        flat.removeValue(forKey: "created_at"); flat.removeValue(forKey: "updated_at")
+        flat["progress_chapter"] = 12.5; flat["rating"] = 0
+        let e = try LibraryEntry.parse(["entry": flat, "series": series, "lists": []])
+        XCTAssertEqual(e.chapters, 12.5); XCTAssertNil(e.createdAt); XCTAssertNil(e.updatedAt); XCTAssertNil(e.rating)
+    }
+    func testAPIProgressAndRereadLimits() throws {
+        var e = try LibraryEntry.parse(row()); e.chapters = 10001; XCTAssertThrowsError(try e.validateBackup())
+        e.chapters = 10000; e.rereads = 1001; XCTAssertThrowsError(try e.validateBackup())
+        e.rereads = 1000; XCTAssertNoThrow(try e.validateBackup())
+    }
+    func testBackupDoesNotContainPAT() throws {
+        let b = LibraryBackup(version: 1, exportedAt: Date(), accountName: "Test", entries: [try LibraryEntry.parse(row())])
+        let text = String(data: try JSONEncoder().encode(b), encoding: .utf8)!
+        XCTAssertFalse(text.contains("mb-test-access")); XCTAssertFalse(text.contains("x-api-key"))
     }
 }

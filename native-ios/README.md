@@ -1,23 +1,28 @@
-# MangaBaka Native — M3
+# MangaBaka Native — M3 (PAT)
 
-iOS 26+ SwiftUI app on `feature/native-ios-m3`, based on M2. Main/M1/M2 are preserved.
+iOS 26+ SwiftUI app on `feature/native-ios-m3`. Main, M1 and M2 are preserved. Chinese/English, light/dark mode.
 
-M3 implements account-only cloud library management, seven reading states, chapters/volumes/rereads/rating editors, account profiles, library search/layout/sorting, statistics, recent changes/additions, and versioned JSON backup/restore. No guest records or offline write queue. Offline access is a read-only account cache. Cloud saves are acknowledged before updating local state. Full paginated reconciliation is used on activation and manual refresh so remote deletions are detected without relying on timestamp-only sync. Incomplete responses never prune the cache.
+## Connect your account
 
-## OAuth configuration is required
+1. Open https://mangabaka.org/my/settings/api-and-apps in your browser and sign in.
+2. Under **Personal access tokens (PAT) for API**, choose **New token**.
+3. In the app, choose **Sign in**, enter the `mb-` token and tap **Connect account**.
+4. The app verifies `/v1/my/profile` using **`x-api-key`**, then stores the token in this device's Keychain and syncs the library. No OAuth client registration, `.env`, CI secrets, or redirect URI is required.
 
-Upstream `.env.example` contains no client ID and only a placeholder redirect. The native app needs a **registered public OAuth client**, with custom-scheme callback authorized by MangaBaka. Configure GitHub repository variables `MANGABAKA_APP_CLIENT_ID` and `MANGABAKA_APP_REDIRECT_URI`, or set corresponding Xcode build settings `MANGABAKA_CLIENT_ID` and `MANGABAKA_REDIRECT_URI` (and `MANGABAKA_CALLBACK_SCHEME`). The existing Flutter `ENV_FILE` Actions secret is also supported as a fallback: only its two public OAuth fields are read, and the rest is never bundled or logged. No client secret is used or embedded. The default native redirect is `dev.ferrosophy.mangabaka.native://oauthredirect`; it must be registered, not merely added to Info.plist.
+Tokens never go into UserDefaults, SwiftData, JSON backups, URLs, build variables, fixtures or logs. The app does not automatically read the clipboard. Invalid/revoked tokens cause reauthentication; PATs do not use OAuth refresh. Sign out removes this device's saved token and account cache; to revoke the token itself use the website. Network failures and 403 permission errors do not discard a valid session. Cross-host redirects never receive the token. Keychain failure prevents login, with no plaintext fallback. The unsigned simulator can report Keychain entitlement failures; account UI tests use a memory vault, and physical-device Keychain must be checked after installation/signing.
 
-For a local build: set environment variables `MANGABAKA_CLIENT_ID` and `MANGABAKA_REDIRECT_URI`, run `python scripts/configure_oauth.py` (PyYAML required), then `xcodegen generate`. The script writes build configuration. Missing configuration produces a review preview with a clear sign-in error, **not a functioning account release**.
+## Library behavior
 
-System authentication uses `ASWebAuthenticationSession`, OAuth authorization code + S256 PKCE, state validation and exact callback matching. This directly uses Apple's system browser instead of adding the Flutter app's AppAuth dependency. Token refresh is serialized, 401 recovers once, credentials live only in Keychain, and account/session generation prevents old requests from crossing logins. No credentials are included in logs, backup files or test fixtures.
+Seven states; chapters/volumes/rereads/rating editing; completed-status confirmation; account profile and statistics; recent additions/changes; local search, layout and sorting; versioned JSON backup/restore. No guest library and no offline write queue. Offline mode shows a read-only account cache. Changes update local state only after cloud acknowledgement. Account/session identity guards every operation, including restore loops.
 
-## Manual CI and verification boundaries
+Read **`/v2/my/library`** (`entry`, `series`, `lists`) with full metadata; create/update/delete through documented `/v1/my/library/{series_id}`. Creates send one POST with all tracked fields; edits PATCH only changed fields. Follow pagination to completion before pruning remote deletions; malformed/incomplete pages preserve the old cache. Missing server timestamps remain unknown rather than inventing dates. Fractional chapters/volumes and scores are preserved. API limits: progress 0–10000, rereads 0–1000, score 0–100. **The API normalizes score 0 to null (not rated)**, so zero is excluded from mean-score statistics. Null progress/re-read counts display as zero.
 
-`native-ios-m2.yml` on the M3 branch is named Native iOS M3 and is workflow_dispatch-only. The registered workflow path is retained to allow manual dispatch without changing main. It captures public API samples, builds an unsigned arm64 IPA, and runs unit/simulator navigation tests. No developer push automatically triggers this workflow. Simulator auth tests use a mock HTTP transport and memory credential vault; they **do not prove real OAuth or cross-device sync works**. Real login requires registered configuration, a user-driven browser authorization, and separate device checks. Test credentials are synthetic and never used for public API writes.
+JSON backups contain reading history and cached metadata, never the PAT. Restore previews the target account and duplicate selections, keeps cloud records by default, never deletes cloud-only entries, and retries failed entries only. Restore is not a transaction across HTTP requests. No third-party import formats or account deletion.
 
-On-device acceptance: sign in/cancel/relaunch/refresh; fetch full library; create a disposable series record, update its status/progress/rating/rereads and clear its score; verify website/another device sees edits, then delete it; verify remote deletion, network loss, sign out and another account isolation; JSON roundtrip with partial failure; Dynamic Type, VoiceOver and reduced transparency. A missing registered client blocks these checks and must be reported in delivery.
+## Build and checks
 
-JSON restore previews target account and duplicate choices, keeps cloud values by default, never removes cloud-only entries, and retries failed records only. It is not a cross-request transaction. Backups contain personal reading history but no tokens. No third-party import format or account deletion is included.
+`brew install xcodegen && xcodegen generate` then build scheme MangaBakaNative. `.github/workflows/native-ios-m2.yml` on the M3 branch is named Native iOS M3 and supports **manual dispatch only**. The registered workflow path is retained so main need not change. It captures public API samples, builds an unsigned arm64 IPA and runs unit/simulator tests.
 
-The homepage upcoming-cover issue remains separate. Root Browse/News are still placeholders; seven M2 detail categories remain functional. See repository LICENSE for Apache-2.0 attribution to Oazzies/MangaBaka-App and https://mangabaka.org/data/api for data terms.
+Simulator review tests use a synthetic PAT and local mock API, exercising login and account UI/edits without touching real accounts. The review transport and memory-vault entry point compile **only for DEBUG simulator**, never Release/device IPA. Tests are not proof of real PAT account/device verification. Enter a real token **inside the installed app**, not in chat or GitHub, to verify actual account login, cross-device sync and Keychain persistence. No real user token has been used in CI.
+
+Public contract: https://mangabaka.org/api.json (security scheme `x-api-key`; PATs start with `mb-`). Root Browse/News remain M1 placeholders; M2 detail categories remain functional. The homepage upcoming-cover issue is separate. Source/API mappings derived from Oazzies/MangaBaka-App under Apache-2.0; artwork belongs to its providers. See LICENSE and https://mangabaka.org/data/api.

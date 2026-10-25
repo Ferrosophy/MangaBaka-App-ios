@@ -40,8 +40,8 @@ struct LibraryView: View {
             switch sort {
             case "title": return $0.displayTitle(locale).localizedStandardCompare($1.displayTitle(locale)) == .orderedAscending
             case "rating": return $0.rating == $1.rating ? $0.title < $1.title : ($0.rating ?? -1) > ($1.rating ?? -1)
-            case "created": return $0.createdAt > $1.createdAt
-            default: return $0.updatedAt > $1.updatedAt
+            case "created": return ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast)
+            default: return ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast)
             }
         }
     }
@@ -54,7 +54,7 @@ struct LibraryView: View {
                         HStack { ForEach(ReadingStatus.allCases) { s in
                             Button { status = s } label: {
                                 HStack { Text(LocalizedStringKey(s.title)); Text("\(library.entries.filter { $0.state == s }.count)") }.padding(.horizontal, 12).padding(.vertical, 10).background(status == s ? Color.green.opacity(0.22) : .clear, in: Capsule())
-                            }.buttonStyle(.plain).accessibilityAddTraits(status == s ? .isSelected : [])
+                            }.buttonStyle(.plain).accessibilityIdentifier("library-status-\(s.rawValue)").accessibilityAddTraits(status == s ? .isSelected : [])
                         } }.padding(.horizontal)
                     }
                     ScrollView {
@@ -63,7 +63,7 @@ struct LibraryView: View {
                             if rows.isEmpty {
                                 ContentUnavailableView(query.isEmpty ? "No books in this category" : "No results found", systemImage: "books.vertical", description: Text(query.isEmpty ? "Add a series from its detail page to start your library." : "Try another title or clear your search."))
                             } else if grid {
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), alignment: .top)], alignment: .leading, spacing: 20) { ForEach(rows) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { LibraryTile(entry: entry) }.buttonStyle(.plain) } }
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), alignment: .top)], alignment: .leading, spacing: 20) { ForEach(rows) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { LibraryTile(entry: entry) }.buttonStyle(.plain).accessibilityIdentifier("library-entry-\(entry.id)") } }
                             } else {
                                 LazyVStack { ForEach(rows) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { HStack { LibraryTile(entry: entry, compact: true); Spacer(); Image(systemName: "chevron.right") } }.buttonStyle(.plain) } }
                             }
@@ -95,7 +95,7 @@ struct LibraryTile: View {
     @Environment(\.locale) private var locale
     var body: some View {
         if compact {
-            HStack { CandidateImage(urls: entry.coverURL.map { [$0] } ?? []).frame(width: 55, height: 82).clipShape(RoundedRectangle(cornerRadius: 8)); VStack(alignment: .leading) { Text(entry.displayTitle(locale)).font(.headline); Text(LocalizedStringKey(entry.state.title)).font(.caption).foregroundStyle(.secondary); Text("\(entry.chapters) chapters · \(entry.volumes) volumes").font(.caption) } }.frame(maxWidth: .infinity, alignment: .leading)
+            HStack { CandidateImage(urls: entry.coverURL.map { [$0] } ?? []).frame(width: 55, height: 82).clipShape(RoundedRectangle(cornerRadius: 8)); VStack(alignment: .leading) { Text(entry.displayTitle(locale)).font(.headline); Text(LocalizedStringKey(entry.state.title)).font(.caption).foregroundStyle(.secondary); Text("\(ReadingNumber.string(entry.chapters)) chapters · \(ReadingNumber.string(entry.volumes)) volumes").font(.caption) } }.frame(maxWidth: .infinity, alignment: .leading)
         } else {
             VStack(alignment: .leading, spacing: 6) {
                 CandidateImage(urls: entry.coverURL.map { [$0] } ?? []).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 12))
@@ -124,8 +124,8 @@ struct SeriesLibraryPanel: View {
                 progressRow("Chapters", current: entry.chapters, total: entry.totalChapters, kind: .chapters)
                 progressRow("Volumes", current: entry.volumes, total: entry.totalVolumes, kind: .volumes)
                 Divider()
-                Button { editing = .rating } label: { HStack { Text("Personal rating"); Spacer(); if let rating = entry.rating { Text("\(rating) / 100") } else { Text("Not rated") }; Image(systemName: "pencil") } }.disabled(!library.canWrite)
-                Button { editing = .rereads } label: { HStack { Text("Rereads"); Spacer(); Text("\(entry.rereads)"); Image(systemName: "pencil") } }.disabled(!library.canWrite)
+                Button { editing = .rating } label: { HStack { Text("Personal rating"); Spacer(); if let rating = entry.rating { Text("\(ReadingNumber.string(rating)) / 100") } else { Text("Not rated") }; Image(systemName: "pencil") } }.disabled(!library.canWrite).accessibilityIdentifier("edit-rating")
+                Button { editing = .rereads } label: { HStack { Text("Rereads"); Spacer(); Text("\(entry.rereads)"); Image(systemName: "pencil") } }.disabled(!library.canWrite).accessibilityIdentifier("edit-rereads")
                 Button("Remove from library", systemImage: "trash", role: .destructive) { confirmDelete = true }.disabled(!library.canWrite)
             } else {
                 Menu { ForEach(ReadingStatus.allCases) { state in Button(LocalizedStringKey(state.title)) {
@@ -150,9 +150,9 @@ struct SeriesLibraryPanel: View {
     }
     private func changeState(_ state: ReadingStatus, entry: LibraryEntry) { var next = entry; next.state = state; save(next) }
     private func save(_ entry: LibraryEntry, create: Bool = false) { Task { do { try await library.save(entry, create: create) } catch { failure = library.friendly(error) } } }
-    private func progressRow(_ title: String, current: Int, total: Int?, kind: LibraryEditKind) -> some View {
+    private func progressRow(_ title: String, current: Double, total: Double?, kind: LibraryEditKind) -> some View {
         VStack {
-            Button { editing = kind } label: { HStack { Text(LocalizedStringKey(title)); Spacer(); Text("\(current) / \(total.map(String.init) ?? "—")"); Image(systemName: "plus.circle") } }.disabled(!library.canWrite)
+            Button { editing = kind } label: { HStack { Text(LocalizedStringKey(title)); Spacer(); Text("\(ReadingNumber.string(current)) / \(total.map(ReadingNumber.string) ?? "—")"); Image(systemName: "plus.circle") } }.disabled(!library.canWrite).accessibilityIdentifier("edit-\(kind.id)")
             if let total, total > 0 { ProgressView(value: min(1, Double(current) / Double(total))) }
         }
     }
@@ -168,27 +168,28 @@ struct LibraryEditSheet: View {
     @State private var saving = false
     init(entry: LibraryEntry, kind: LibraryEditKind) {
         self.entry = entry; self.kind = kind
-        let value: Int = switch kind { case .chapters: entry.chapters; case .volumes: entry.volumes; case .rating: entry.rating ?? 0; case .rereads: entry.rereads }
-        _number = State(initialValue: String(value))
+        let value: Double = switch kind { case .chapters: entry.chapters; case .volumes: entry.volumes; case .rating: entry.rating ?? 0; case .rereads: Double(entry.rereads) }
+        _number = State(initialValue: ReadingNumber.string(value))
     }
-    private var total: Int? { switch kind { case .chapters: entry.totalChapters; case .volumes: entry.totalVolumes; case .rating: 100; case .rereads: nil } }
-    private var value: Int? { Int(number) }
-    private var valid: Bool { guard let value, value >= 0, value <= 10_000_000 else { return false }; return total.map { $0 <= 0 || value <= $0 } ?? true }
+    private var total: Double? { switch kind { case .chapters: entry.totalChapters; case .volumes: entry.totalVolumes; case .rating: 100; case .rereads: 1000 } }
+    private var value: Double? { Double(number) }
+    private var valid: Bool { guard let value, value.isFinite, value >= 0, value <= (kind == .rereads ? 1000 : kind == .rating ? 100 : 10000) else { return false }; if kind == .rereads && value.rounded() != value { return false }; return total.map { $0 <= 0 || value <= $0 } ?? true }
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    if let total { LabeledContent("Total", value: "\(total)") }
+                    if let total { LabeledContent("Total", value: ReadingNumber.string(total)) }
                     HStack {
-                        Button { number = String(max(0, (value ?? 0) - 1)) } label: { Image(systemName: "minus.circle") }.buttonStyle(.borderless).accessibilityLabel("Decrease")
-                        TextField("Value", text: $number).keyboardType(.numberPad).multilineTextAlignment(.center).accessibilityIdentifier("reading-value")
-                        Button { number = String(min(total.flatMap { $0 > 0 ? $0 : nil } ?? Int.max - 1, min(value ?? 0, 9_999_999) + 1)) } label: { Image(systemName: "plus.circle") }.buttonStyle(.borderless).accessibilityLabel("Increase")
+                        Button { number = ReadingNumber.string(max(0, (value ?? 0) - 1)) } label: { Image(systemName: "minus.circle") }.buttonStyle(.borderless).accessibilityLabel("Decrease")
+                        TextField("Value", text: $number).keyboardType(.decimalPad).multilineTextAlignment(.center).accessibilityIdentifier("reading-value")
+                        Button { number = ReadingNumber.string(min(total.flatMap { $0 > 0 ? $0 : nil } ?? 10000, (value ?? 0) + 1)) } label: { Image(systemName: "plus.circle") }.buttonStyle(.borderless).accessibilityLabel("Increase")
                     }
                     if kind == .rating {
                         Slider(value: Binding(get: { Double(value ?? 0) }, set: { number = String(Int($0.rounded())) }), in: 0...100, step: 1).accessibilityLabel("Personal rating")
+                        Text("MangaBaka treats a score of 0 as not rated.").font(.footnote).foregroundStyle(.secondary)
                         Button("Clear rating", role: .destructive) { commit(clear: true) }.disabled(!library.canWrite || saving)
                     }
-                    if !valid { Text("Enter a non-negative whole number within the known total.").foregroundStyle(.orange) }
+                    if !valid { Text("Enter a non-negative number within the known total. Rereads must be a whole number.").foregroundStyle(.orange) }
                 }
                 if let failure { Section { Text(LocalizedStringKey(failure)).foregroundStyle(.orange) } }
                 if saving { ProgressView() }
@@ -201,7 +202,7 @@ struct LibraryEditSheet: View {
     }
     private func commit(clear: Bool = false) {
         var next = entry
-        switch kind { case .chapters: next.chapters = value ?? 0; case .volumes: next.volumes = value ?? 0; case .rereads: next.rereads = value ?? 0; case .rating: next.rating = clear ? nil : value }
+        switch kind { case .chapters: next.chapters = value ?? 0; case .volumes: next.volumes = value ?? 0; case .rereads: next.rereads = Int(value ?? 0); case .rating: next.rating = clear || value == 0 ? nil : value }
         saving = true
         Task { do { try await library.save(next); dismiss() } catch { failure = library.friendly(error) }; saving = false }
     }

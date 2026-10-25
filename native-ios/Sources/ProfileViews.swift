@@ -18,10 +18,10 @@ struct ProfileView: View {
                     }
                     SyncBanner()
                     HStack { Text("At a glance").font(.title2.bold()); Spacer(); NavigationLink("Full statistics") { StatisticsView() } }
-                    StatisticsGrid(items: [("Total series", "\(stats.total)", "books.vertical"), ("Chapters read", "\(stats.chapters)", "text.book.closed"), ("Volumes read", "\(stats.volumes)", "book.closed"), ("Mean score", stats.mean.map { String(format: "%.1f", $0) } ?? "—", "star")])
+                    StatisticsGrid(items: [("Total series", "\(stats.total)", "books.vertical"), ("Chapters read", ReadingNumber.string(stats.chapters), "text.book.closed"), ("Volumes read", ReadingNumber.string(stats.volumes), "book.closed"), ("Mean score", stats.mean.map { String(format: "%.1f", $0) } ?? "—", "star")])
                     Text("Library snapshot").font(.title2.bold())
-                    snapshot("Recently changed", rows: library.entries.sorted { $0.updatedAt > $1.updatedAt })
-                    snapshot("Recently added", rows: library.entries.sorted { $0.createdAt > $1.createdAt })
+                    snapshot("Recently changed", rows: library.entries.sorted { ($0.updatedAt ?? .distantPast) > ($1.updatedAt ?? .distantPast) })
+                    snapshot("Recently added", rows: library.entries.sorted { ($0.createdAt ?? .distantPast) > ($1.createdAt ?? .distantPast) })
                     NavigationLink("Backup and restore") { BackupView() }
                     Button("Sign out", role: .destructive) { confirmLogout = true }.disabled(library.writing || library.restoring || auth.signingIn)
                 }
@@ -66,11 +66,11 @@ struct StatisticsView: View {
                 VStack(alignment: .leading, spacing: 24) {
                     SyncBanner()
                     Text("Reading overview").font(.title2.bold())
-                    StatisticsGrid(items: [("Total series", "\(s.total)", "books.vertical"), ("Chapters read", "\(s.chapters)", "text.book.closed"), ("Volumes read", "\(s.volumes)", "book.closed"), ("Completion", String(format: "%.1f%%", s.completion), "checkmark.circle"), ("Total rereads", "\(s.rereads)", "arrow.clockwise"), ("Mean score", s.mean.map { String(format: "%.1f", $0) } ?? "—", "star"), ("Finish rate", String(format: "%.1f%%", s.finish), "flag")])
+                    StatisticsGrid(items: [("Total series", "\(s.total)", "books.vertical"), ("Chapters read", ReadingNumber.string(s.chapters), "text.book.closed"), ("Volumes read", ReadingNumber.string(s.volumes), "book.closed"), ("Completion", String(format: "%.1f%%", s.completion), "checkmark.circle"), ("Total rereads", "\(s.rereads)", "arrow.clockwise"), ("Mean score", s.mean.map { String(format: "%.1f", $0) } ?? "—", "star"), ("Finish rate", String(format: "%.1f%%", s.finish), "flag")])
                     if s.mean == nil { Text("No ratings yet").foregroundStyle(.secondary) }
                     Text("Completion is completed series divided by all series. Finish rate is completed divided by completed plus dropped.").font(.footnote).foregroundStyle(.secondary)
                     if s.highest != nil || s.mostReread != nil { Text("Standout picks").font(.title2.bold()) }
-                    if let entry = s.highest { pick("Highest rated", entry: entry, value: "\(entry.rating ?? 0) / 100") }
+                    if let entry = s.highest { pick("Highest rated", entry: entry, value: "\(ReadingNumber.string(entry.rating ?? 0)) / 100") }
                     if let entry = s.mostReread { pick("Most reread", entry: entry, value: "\(entry.rereads)") }
                 }.padding()
             } }

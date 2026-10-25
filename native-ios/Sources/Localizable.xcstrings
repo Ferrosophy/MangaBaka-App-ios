@@ -4344,6 +4344,262 @@
           }
         }
       }
+    },
+    "Create a personal access token in your MangaBaka account settings, then enter it here.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Create a personal access token in your MangaBaka account settings, then enter it here."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "在 MangaBaka 账号设置中创建个人访问令牌，然后在此输入。"
+          }
+        }
+      }
+    },
+    "Open MangaBaka account settings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open MangaBaka account settings"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "打开 MangaBaka 账号设置"
+          }
+        }
+      }
+    },
+    "Choose Personal access tokens (PAT) for API, then New token.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choose Personal access tokens (PAT) for API, then New token."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "找到“用于 API 的个人访问令牌（PAT）”，点击“New token”创建令牌。"
+          }
+        }
+      }
+    },
+    "Personal access token": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Personal access token"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "个人访问令牌"
+          }
+        }
+      }
+    },
+    "The token is stored only in this device’s Keychain. It is never included in backups.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The token is stored only in this device’s Keychain. It is never included in backups."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "令牌仅保存在本机 Keychain 安全存储中，不会写入备份。"
+          }
+        }
+      }
+    },
+    "A PAT grants full account access. You can revoke it on the MangaBaka website.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A PAT grants full account access. You can revoke it on the MangaBaka website."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "PAT 拥有账号完整访问权限，可在 MangaBaka 网站撤销。"
+          }
+        }
+      }
+    },
+    "Connect account": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect account"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接账号"
+          }
+        }
+      }
+    },
+    "Sign in with PAT": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in with PAT"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用 PAT 登录"
+          }
+        }
+      }
+    },
+    "Connection failed. Check your network and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connection failed. Check your network and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接失败，请检查网络后重试。"
+          }
+        }
+      }
+    },
+    "Enter a valid personal access token starting with mb-.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a valid personal access token starting with mb-."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入以 mb- 开头的有效个人访问令牌。"
+          }
+        }
+      }
+    },
+    "Your personal access token is invalid or revoked. Create a new token and sign in again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your personal access token is invalid or revoked. Create a new token and sign in again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "个人访问令牌已失效或被撤销，请创建新令牌后重新登录。"
+          }
+        }
+      }
+    },
+    "Unable to confirm your account. Check your token and try again.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unable to confirm your account. Check your token and try again."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "无法确认账号身份，请检查令牌后重试。"
+          }
+        }
+      }
+    },
+    "Enter a personal access token, not an OAuth access token.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a personal access token, not an OAuth access token."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入个人访问令牌（PAT），而非 OAuth 访问令牌。"
+          }
+        }
+      }
+    },
+    "MangaBaka treats a score of 0 as not rated.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MangaBaka treats a score of 0 as not rated."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "MangaBaka 会将 0 分保存为“未评分”。"
+          }
+        }
+      }
+    },
+    "Enter a non-negative number within the known total. Rereads must be a whole number.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enter a non-negative number within the known total. Rereads must be a whole number."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "请输入不超过已知总数的非负数，重读次数必须为整数。"
+          }
+        }
+      }
+    },
+    "%@ chapters · %@ volumes": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ chapters · %@ volumes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已读 %@ 章 · %@ 卷"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

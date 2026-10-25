@@ -33,9 +33,17 @@ import SwiftData
         do {
             let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
             try FileManager.default.createDirectory(at: support, withIntermediateDirectories: true)
+            #if DEBUG && targetEnvironment(simulator)
+            let container = try ModelContainer(for: LibraryCache.self, configurations: ModelConfiguration(isStoredInMemoryOnly: AccountReviewFixtures.enabled))
+            #else
             let container = try ModelContainer(for: LibraryCache.self)
+            #endif
             self.container = container
+            #if DEBUG && targetEnvironment(simulator)
+            let auth = AccountReviewFixtures.enabled ? AccountReviewFixtures.session() : AuthSession()
+            #else
             let auth = AuthSession()
+            #endif
             _auth = State(initialValue: auth)
             _library = State(initialValue: LibraryRepository(auth: auth, context: container.mainContext))
         } catch { fatalError("Unable to open library cache: \(error)") }
@@ -49,6 +57,7 @@ import SwiftData
                 } else { RootView() }
             }.environment(preferences).environment(auth).environment(library)
                 .modelContainer(container)
+                .sheet(isPresented: Binding(get: { auth.showingSignIn }, set: { auth.showingSignIn = $0 })) { PATSignInView() }
                 .task(id: auth.generation) { library.activate(); if auth.isAuthenticated { await library.sync() } }
                 .onChange(of: scenePhase) { if scenePhase == .active { Task { await library.sync() } } }
                 .alert("Account", isPresented: Binding(get: { auth.error != nil }, set: { if !$0 { auth.error = nil } })) { Button("OK") { auth.error = nil } } message: { Text(LocalizedStringKey(auth.error ?? "")) }
