@@ -1,0 +1,44 @@
+[
+  {
+    "asset": "source-anilist",
+    "name": "AniList",
+    "page": "https://mangabaka.org/manga/1677/Chainsaw-Man",
+    "resource": "data:image/svg+xml,[embedded in official page]"
+  },
+  {
+    "asset": "source-my_anime_list",
+    "name": "MyAnimeList",
+    "page": "https://mangabaka.org/manga/1677/Chainsaw-Man",
+    "resource": "data:image/png;base64,[embedded in official page]"
+  },
+  {
+    "asset": "source-anime_planet",
+    "name": "Anime-Planet",
+    "page": "https://mangabaka.org/manga/1677/Chainsaw-Man",
+    "resource": "data:image/svg+xml,[embedded in official page]"
+  },
+  {
+    "asset": "source-kitsu",
+    "name": "Kitsu",
+    "page": "https://mangabaka.org/manga/1677/Chainsaw-Man",
+    "resource": "/_app/immutable/assets/kitsu.EqyjSJ-B.png"
+  },
+  {
+    "asset": "source-shikimori",
+    "name": "Shikimori",
+    "page": "https://mangabaka.org/manga/1677/Chainsaw-Man",
+    "resource": "data:image/png;base64,[embedded in official page]"
+  },
+  {
+    "asset": "source-anime_news_network",
+    "name": "Anime News Network",
+    "page": "https://mangabaka.org/manga/1677/Chainsaw-Man",
+    "resource": "/_app/immutable/assets/ann.ByU3r1DM.png"
+  },
+  {
+    "asset": "source-manga_updates",
+    "name": "MangaUpdates",
+    "page": "https://mangabaka.org/manga/1677/Chainsaw-Man",
+    "resource": "data:image/svg+xml,[embedded in official page]"
+  }
+]

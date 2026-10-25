@@ -11,6 +11,14 @@ enum DiscoveryFixtures {
         if let url = Bundle.main.url(forResource: "v1-series-1677-1", withExtension: "json"), let data = try? Data(contentsOf: url), let root = try? JSONSerialization.jsonObject(with: data) as? [String: Any], let row = root["data"] as? [String: Any] {
             cards[0]["cover"] = row["cover"]
         }
+        if ProcessInfo.processInfo.environment["M4_LAYOUT_REVIEW"] == "1" {
+            cards = [
+                ["id": 101, "title": "Short", "content_rating": "safe", "cover": "https://layout-review.invalid/portrait"],
+                ["id": 102, "title": "A much longer title that needs two lines and more", "content_rating": "safe", "cover": "https://layout-review.invalid/landscape"],
+                ["id": 103, "title": "Square cover", "content_rating": "safe", "cover": "https://layout-review.invalid/square"],
+                ["id": 104, "title": "Missing cover", "content_rating": "safe"]
+            ]
+        }
         let next: Any = (items.first { $0.name == "page" }?.value ?? "1") == "1" ? 2 : NSNull()
         var root: [String: Any] = ["pagination": ["next": next], "data": cards]
         if path == "v2/news" { root["data"] = [["id": 1, "source_name": "ann", "title": "New manga releases this week", "author": "Review fixture", "published_at": "2026-10-23", "url": "https://www.animenewsnetwork.com/", "mentioned_series": [1677, 1078, 9999], "series": cards]] }

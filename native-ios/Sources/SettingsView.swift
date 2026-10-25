@@ -10,6 +10,7 @@ struct SettingsView: View {
             Section("Preferences") {
                 NavigationLink("General") { GeneralSettingsView() }
                 NavigationLink("Content") { ContentSettingsView() }
+                NavigationLink("Translation settings") { TranslationSettingsView() }
                 Picker("Language", selection: $settings.language) { Text("Follow System").tag("system"); Text("简体中文").tag("zh-Hans"); Text("English").tag("en") }
                 Picker("Appearance", selection: $settings.appearance) { Text("Follow System").tag("system"); Text("Light").tag("light"); Text("Dark").tag("dark") }
             }

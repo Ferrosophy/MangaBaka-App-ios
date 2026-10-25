@@ -16,22 +16,10 @@ struct SeriesInfoView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 24) {
             if !series.sourceScores.isEmpty {
-                FlowLayout(spacing: 12) {
-                    if let score = series.score { Text("★ \(score, specifier: "%.1f")").bold() }
-                    ForEach(series.sourceScores, id: \.name) { source in
-                        let url = source.url ?? links.first(where: { $0.text("name").lowercased().contains(source.name.lowercased()) }).flatMap { safeURL($0.text("url")) }
-                        Button { if let url { openURL(url) } } label: { Text("\(DetailRecord.sourceName(source.name))  \(source.score, specifier: "%.0f")").font(.subheadline) }.disabled(url == nil).frame(minHeight: 44)
-                    }
-                }
+                SourceScoresView(series: series, links: links, openURL: openURL)
             }
             if !descriptionText.isEmpty {
-                heading("Description")
-                Text((try? AttributedString(markdown: descriptionText, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(descriptionText)).lineSpacing(6).lineLimit(expanded ? nil : 8).textSelection(.enabled)
-                HStack {
-                    Button(LocalizedStringKey(expanded ? "Show less" : "Show more")) { expanded.toggle() }.frame(minHeight: 44)
-                    Spacer()
-                    Button { UIPasteboard.general.string = descriptionText; copied = true } label: { Label(LocalizedStringKey(copied ? "Copied" : "Copy description"), systemImage: "doc.on.doc") }.frame(minHeight: 44)
-                }
+                TranslatedDescription(text: descriptionText)
             }
             let genres = names("genres_v2", fallback: "genres")
             if !genres.isEmpty { heading("Genres"); FlowLayout { ForEach(genres, id: \.self) { chip($0) } } }

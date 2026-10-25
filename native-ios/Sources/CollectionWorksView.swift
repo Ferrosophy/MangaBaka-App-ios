@@ -35,7 +35,7 @@ struct CollectionWorksView: View {
         }.navigationTitle("Collections").navigationBarTitleDisplayMode(.inline)
         .toolbar(.hidden, for: .tabBar)
         .task { if !list.loaded { await list.load() } }
-        .refreshable { await list.load(refresh: true) }
+        .safeRefreshable { await list.load(refresh: true) }
     }
 }
 struct WorksContent: View {
@@ -77,13 +77,13 @@ struct WorksContent: View {
     }
     private func metadata(_ row: DetailRecord, title: String) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(title).font(.headline).lineLimit(2)
-            if !row.text("release_date").isEmpty { Text(localDate(row.text("release_date"), locale: locale)).font(.subheadline).foregroundStyle(.secondary) }
+            Text(title).font(.headline).lineLimit(2, reservesSpace: true)
+            Text(row.text("release_date").isEmpty ? " " : localDate(row.text("release_date"), locale: locale)).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
             HStack {
                 if let pages = Int(row.text("pages")) { Text("\(pages) pages") } else { Text("Pages unknown") }
                 Text(preferences.text(row.text("count_type")))
-            }.font(.caption).foregroundStyle(.secondary)
-            if let price = row.records("price").first { Text(price.text("value") + " " + price.text("iso_code").uppercased()).font(.caption).foregroundStyle(.green) }
+            }.font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            Text(row.records("price").first.map { $0.text("value") + " " + $0.text("iso_code").uppercased() } ?? " ").font(.caption).foregroundStyle(.green).lineLimit(1)
         }
     }
 }

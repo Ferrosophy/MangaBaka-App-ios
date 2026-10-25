@@ -67,3 +67,13 @@ for endpoint, params in [
         report.append({'path': endpoint, 'ok': False, 'error': str(error)})
 pathlib.Path('api-validation.json').write_text(json.dumps(report, indent=2))
 print(json.dumps(report, indent=2))
+
+
+# Bitmap aspect ratios intentionally differ to exercise fill/clipping on simulator.
+import zlib, struct
+for name, width, height, color in [('portrait', 80, 160, (35, 140, 90)), ('landscape', 180, 80, (90, 100, 210)), ('square', 100, 100, (220, 140, 40))]:
+    def chunk(kind, data):
+        return struct.pack('!I', len(data)) + kind + data + struct.pack('!I', zlib.crc32(kind + data) & 0xffffffff)
+    pixels = b''.join(b'\x00' + bytes(color) * width for _ in range(height))
+    image = b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('!2I5B', width, height, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress(pixels)) + chunk(b'IEND', b'')
+    (root / ('layout-' + name + '.png')).write_bytes(image)

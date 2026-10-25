@@ -28,7 +28,7 @@ struct DiscoveryTile: View {
         VStack(alignment: .leading, spacing: 8) {
             PolicyCover(url: card.image, rating: card.contentRating).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 12))
                 .overlay(alignment: .topLeading) { if let rank { Text("\(rank)").font(.headline).padding(8).background(.green, in: UnevenRoundedRectangle(topLeadingRadius: 12, bottomTrailingRadius: 12)).foregroundStyle(.black) } }
-            Text(preferences.title(card)).font(.subheadline.bold()).lineLimit(2)
+            Text(preferences.title(card)).font(.subheadline.bold()).lineLimit(2, reservesSpace: true)
         }.accessibilityElement(children: .combine)
     }
 }
@@ -42,7 +42,7 @@ struct DiscoveryCards: View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 12)], alignment: .leading, spacing: 20) {
             ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
                 if preferences.allows(card.contentRating) && (!excludeLibrary || !library.entries.contains { $0.id == card.id }) {
-                    NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card, rank: ranked ? index + 1 : nil) }.buttonStyle(.plain)
+                    NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card, rank: ranked ? index + 1 : nil) }.buttonStyle(.plain).accessibilityIdentifier("discovery-card-\(card.id)")
                 }
             }
         }
@@ -101,7 +101,7 @@ struct BrowseResultsView: View {
                 q.type = query.type
                 await suggestions.load(path: "v2/series/search", items: q.items(page: 1, preferences: preferences, account: auth.profile?.id))
             }
-            .refreshable { query.randomSeed = Double.random(in: 0..<1); await load(refresh: true) }
+            .safeRefreshable { query.randomSeed = Double.random(in: 0..<1); await load(refresh: true) }
     }
     private func load(refresh: Bool = false) async {
         var q = query
@@ -139,7 +139,7 @@ struct NewsView: View {
         }.navigationTitle("News")
             .toolbar { ToolbarItem(placement: .topBarTrailing) { NavigationLink { SettingsView() } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings") } }
             .task { if !list.loaded { await load() } }
-            .refreshable { await load(refresh: true) }
+            .safeRefreshable { await load(refresh: true) }
             .sheet(item: $web) { SafariView(url: $0.url).ignoresSafeArea() }
     }
     private func load(refresh: Bool = false) async { await list.load(path: "v2/news", items: [URLQueryItem(name: "limit", value: "10")], refresh: refresh) }
@@ -156,7 +156,7 @@ struct NewsView: View {
             }.buttonStyle(.plain).disabled(article.url == nil).accessibilityLabel(Text(r.text("title")))
             if article.total > 0 {
                 HStack { Text("Referenced series"); Text("\(visible.count) / \(article.total)") }.font(.caption.bold()).foregroundStyle(.secondary)
-                ScrollView(.horizontal, showsIndicators: false) { LazyHStack(alignment: .top, spacing: 12) { ForEach(visible) { card in NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card).frame(width: 100) }.buttonStyle(.plain) } } }
+                ScrollView(.horizontal, showsIndicators: false) { LazyHStack(alignment: .top, spacing: 12) { ForEach(visible) { card in NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card).frame(width: 100) }.buttonStyle(.plain) } }.scrollTargetLayout() }.scrollClipDisabled().scrollTargetBehavior(.viewAligned) }
             }
         }.padding(18).background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 24))
     }

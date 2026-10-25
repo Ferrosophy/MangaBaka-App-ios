@@ -5,6 +5,7 @@ import Foundation
 @MainActor enum AccountReviewFixtures {
     static var enabled: Bool { ProcessInfo.processInfo.environment["M3_ACCOUNT_FIXTURES"] == "1" }
     static func session() -> AuthSession {
+        ReviewAPIProtocol.configureLayout()
         let c = URLSessionConfiguration.ephemeral; c.protocolClasses = [ReviewAPIProtocol.self]
         return AuthSession(transport: URLSession(configuration: c), vault: ReviewVault())
     }
@@ -21,6 +22,11 @@ private final class ReviewAPIProtocol: URLProtocol {
         ["id": 1, "series_id": 1677, "user_id": "review", "state": "completed", "progress_chapter": 232, "progress_volume": 24, "rating": 65, "number_of_rereads": 0, "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-03T00:00:00Z"],
         ["id": 2, "series_id": 2, "user_id": "review", "state": "reading", "progress_chapter": 10, "progress_volume": 1, "rating": NSNull(), "number_of_rereads": 0, "created_at": "2026-01-02T00:00:00Z", "updated_at": "2026-01-04T00:00:00Z"]
     ]
+    static func configureLayout() {
+        guard ProcessInfo.processInfo.environment["M4_LAYOUT_REVIEW"] == "1" else { return }
+        lock.lock(); defer { lock.unlock() }
+        entries = (101...106).map { id in ["id": id, "series_id": id, "state": "reading", "progress_chapter": id - 100, "progress_volume": 0, "rating": NSNull(), "number_of_rereads": 0, "created_at": "2026-01-01T00:00:00Z", "updated_at": "2026-01-01T00:00:00Z"] }
+    }
     override class func canInit(with request: URLRequest) -> Bool { request.url?.host == "api.mangabaka.org" }
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
     override func startLoading() {
@@ -36,6 +42,10 @@ private final class ReviewAPIProtocol: URLProtocol {
                 let id = entry["series_id"] as! Int
                 var series: [String: Any] = ["id": id, "title": "Review Series", "total_chapters": 83, "final_volume": 8]
                 if id == 1677, let url = Bundle.main.url(forResource: "v1-series-1677-1", withExtension: "json"), let d = try? Data(contentsOf: url), let root = try? JSONSerialization.jsonObject(with: d) as? [String: Any], let actual = root["data"] as? [String: Any] { series = actual }
+                if ProcessInfo.processInfo.environment["M4_LAYOUT_REVIEW"] == "1" {
+                    let shapes = ["portrait", "landscape", "square"]
+                    series = ["id": id, "title": id % 2 == 0 ? "A very long library title spanning two lines" : "Short", "content_rating": "safe", "cover": "https://layout-review.invalid/" + shapes[(id - 101) % 3], "total_chapters": id == 103 ? NSNull() : 20, "final_volume": NSNull()]
+                }
                 return ["entry": entry, "series": series, "lists": []]
             }]
         } else if path.contains("/my/library/"), let id = Int(path.split(separator: "/").last ?? "") {

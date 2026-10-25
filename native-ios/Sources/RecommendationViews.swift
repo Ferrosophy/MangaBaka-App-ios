@@ -49,7 +49,7 @@ struct MixView: View {
                 guard !Task.isCancelled, seeds.count >= 2 else { return }
                 await seedSuggestions.load(path: "v1/series/mix/seeds", items: seeds.map { URLQueryItem(name: "series", value: $0.id) })
             }
-            .refreshable { if !seeds.isEmpty { await load(refresh: true) } }
+            .safeRefreshable { if !seeds.isEmpty { await load(refresh: true) } }
             .onChange(of: blend) { if blend && !auth.isAuthenticated { blend = false; auth.showingSignIn = true } }
     }
     private func add(_ card: HomeCard) { if seeds.count < 25 && !seeds.contains(where: { $0.id == card.id }) { seeds.append(card) } }

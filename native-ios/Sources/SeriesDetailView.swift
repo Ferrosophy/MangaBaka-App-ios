@@ -10,6 +10,8 @@ struct SeriesDetailView: View {
     @State private var offsets: [DetailTab: CGFloat] = [:]
     @State private var restoringScroll = false
     @State private var compactTitle = false
+    @State private var refreshing = false
+    @Namespace private var tabsAnimation
     @State private var allowedHidden = false
     @State private var revealCover = false
     @Environment(\.locale) private var locale
@@ -44,16 +46,30 @@ struct SeriesDetailView: View {
         }
         .scrollPosition($scrollPosition)
         .onScrollGeometryChange(for: CGFloat.self) { $0.contentOffset.y + $0.contentInsets.top } action: { _, offset in
-            compactTitle = offset > 180
-            if !restoringScroll { offsets[selected] = max(0, offset) }
+            if !refreshing && offset >= 0 { compactTitle = offset > 180 }
+            if !restoringScroll && !refreshing && offset >= 0 { offsets[selected] = offset }
         }
-        .refreshable {
+        .safeRefreshable {
+            refreshing = true
+            defer { refreshing = false }
             await model.load(refresh: true)
             await model.lists[selected]?.load(refresh: true)
             if selected == .similar { await model.readers.load(refresh: true) }
         }
         .navigationTitle(compactTitle ? title : "")
         .navigationBarTitleDisplayMode(.inline)
+        .background(alignment: .top) {
+            GeometryReader { geometry in
+                if let cover {
+                    CoverImage(url: cover).frame(width: geometry.size.width, height: 440)
+                        .blur(radius: 35).opacity(compactTitle ? 0 : 0.28)
+                        .mask(LinearGradient(colors: [.black, .black.opacity(0.8), .clear], startPoint: .top, endPoint: .bottom))
+                        .ignoresSafeArea(.container, edges: .top)
+                }
+            }.allowsHitTesting(false).accessibilityHidden(true)
+        }
+        .toolbarBackground(.regularMaterial, for: .navigationBar)
+        .toolbarBackground(compactTitle ? .visible : .hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
         .toolbar { ToolbarItem(placement: .topBarTrailing) { ShareLink(item: URL(string: "https://mangabaka.org/\(model.seriesID)")!) } }
         .task { await model.load(); await loadSelected() }
@@ -103,12 +119,7 @@ struct SeriesDetailView: View {
                     }
                 } else if model.loading { ProgressView() }
             }.frame(maxWidth: .infinity, alignment: .leading)
-        }.padding(20).padding(.top, 16)
-        .background {
-            GeometryReader { g in
-                if let cover { CoverImage(url: cover).frame(width: g.size.width, height: g.size.height).blur(radius: 35).opacity(0.22).clipped().mask(LinearGradient(colors: [.black, .clear], startPoint: .top, endPoint: .bottom)) }
-            }.accessibilityHidden(true)
-        }
+        }.padding(20).padding(.top, 8)
     }
     private var tabBar: some View {
         ScrollViewReader { proxy in
@@ -117,11 +128,12 @@ struct SeriesDetailView: View {
                     ForEach(DetailTab.allCases) { tab in
                         Button { selectTab(tab) } label: {
                             Text(LocalizedStringKey(tab.rawValue)).font(.subheadline.bold()).padding(.horizontal, 16).frame(minHeight: 44)
-                                .background(selected == tab ? Color.green.opacity(0.22) : .clear, in: Capsule())
+                                .foregroundStyle(selected == tab ? Color.green : Color.primary)
+                                .background { if selected == tab { Capsule().fill(.green.opacity(0.18)).matchedGeometryEffect(id: "selected-detail-tab", in: tabsAnimation) } }
                         }.buttonStyle(.plain).id(tab).accessibilityIdentifier("detail-tab-\(tab.rawValue)").accessibilityAddTraits(selected == tab ? .isSelected : [])
                     }
-                }.padding(.horizontal, 16).padding(.vertical, 8)
-            }.background(.regularMaterial).accessibilityIdentifier("detail-tabs")
+                }.padding(6).animation(.snappy(duration: 0.25), value: selected)
+            }.glassEffect(.regular, in: .capsule).padding(.horizontal, 16).padding(.vertical, 6).accessibilityIdentifier("detail-tabs")
             .onChange(of: selected) { withAnimation { proxy.scrollTo(selected, anchor: .center) } }
         }
     }
@@ -149,7 +161,7 @@ struct SeriesDetailView: View {
         return LazyVGrid(columns: [GridItem(.adaptive(minimum: 95), spacing: 12)], spacing: 18) {
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                 Button { showGallery(items, index: index) } label: {
-                    VStack(alignment: .leading) { CandidateImage(urls: item.thumbnail).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(item.title).font(.caption).lineLimit(2) }
+                    VStack(alignment: .leading) { CandidateImage(urls: item.thumbnail).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(item.title).font(.caption).lineLimit(2, reservesSpace: true) }
                 }.buttonStyle(.plain).disabled(item.urls.isEmpty).accessibilityIdentifier("cover-card-\(index)")
             }
         }
@@ -194,7 +206,7 @@ struct SeriesGrid: View {
             ForEach(cards) { card in
                 NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: {
                     if listStyle { HStack { PolicyCover(url: card.image, rating: card.contentRating).frame(width: 60, height: 90).clipShape(RoundedRectangle(cornerRadius: 8)); Text(preferences.title(card)).frame(maxWidth: .infinity, alignment: .leading) } }
-                    else { VStack(alignment: .leading) { PolicyCover(url: card.image, rating: card.contentRating).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(preferences.title(card)).font(.caption.weight(.semibold)).lineLimit(2); if let relation = relation(card.id) { Text(preferences.text(relation)).font(.caption).foregroundStyle(.secondary) } } }
+                    else { VStack(alignment: .leading) { PolicyCover(url: card.image, rating: card.contentRating).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(preferences.title(card)).font(.caption.weight(.semibold)).lineLimit(2, reservesSpace: true); Text(relation(card.id).map { preferences.text($0) } ?? " ").font(.caption).foregroundStyle(.secondary).lineLimit(1) } }
                 }.buttonStyle(.plain).accessibilityIdentifier("series-card-\(card.id)")
             }
         }

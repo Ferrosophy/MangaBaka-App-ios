@@ -30,7 +30,7 @@ struct HomeView: View {
         }
         .navigationTitle("Home")
         .toolbar { ToolbarItem(placement: .topBarTrailing) { NavigationLink { SettingsView() } label: { Image(systemName: "gearshape") }.accessibilityLabel(Text("Settings")) } }
-        .refreshable { await model.refresh() }
+        .safeRefreshable { await model.refresh() }
         .task { if !loaded { loaded = true; await model.refresh() } }
         .sheet(item: $web) { SafariView(url: $0.url).ignoresSafeArea() }
     }
@@ -68,8 +68,8 @@ struct HomeView: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: 14) {
                     ForEach(state.cards.filter { shelf == .publishers || preferences.allows($0.contentRating) }) { card in cardView(card, shelf: shelf) }
-                }.padding(.horizontal, 20)
-            }.opacity(state.loading ? 0.5 : 1)
+                }.padding(.horizontal, 20).scrollTargetLayout()
+            }.scrollClipDisabled().scrollTargetBehavior(.viewAligned).opacity(state.loading ? 0.5 : 1)
             if state.failed { Button("Unable to refresh. Retry") { Task { await model.load(shelf) } }.padding(.horizontal, 20) }
         }
     }
@@ -88,7 +88,7 @@ struct HomeView: View {
                     Text(releaseDate(date)).font(.caption.weight(.semibold)).foregroundStyle(.green)
                 }
                 if !card.volume.isEmpty { Text("Volume \(card.volume)").font(.caption).foregroundStyle(.green) }
-                Text(preferences.title(card)).font(.subheadline.weight(.semibold)).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+                Text(preferences.title(card)).font(.subheadline.weight(.semibold)).lineLimit(2, reservesSpace: true).frame(maxWidth: .infinity, alignment: .leading)
                 if let count = card.count { Text("\(count) series").font(.caption).foregroundStyle(.secondary) }
             }
             .frame(width: 140, alignment: .leading)

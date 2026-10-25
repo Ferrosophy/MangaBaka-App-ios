@@ -6,6 +6,9 @@ actor ImageCache {
     private let folder = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0].appendingPathComponent("CoverImages")
     private var generation = 0
     func data(for url: URL) async throws -> Data {
+        #if DEBUG && targetEnvironment(simulator)
+        if url.host == "layout-review.invalid", let file = Bundle.main.url(forResource: "layout-" + url.lastPathComponent, withExtension: "png") { return try Data(contentsOf: file) }
+        #endif
         let token = generation
         let name = SHA256.hash(data: Data(url.absoluteString.utf8)).map { String(format: "%02x", $0) }.joined()
         let file = folder.appendingPathComponent(name)
@@ -31,12 +34,9 @@ struct CoverImage: View {
     let url: URL?
     @State private var image: UIImage?
     var body: some View {
-        ZStack {
-            Rectangle().fill(.quaternary)
-            if let image { Image(uiImage: image).resizable().scaledToFill() }
-            else { Image(systemName: "book.closed").font(.largeTitle).foregroundStyle(.secondary) }
-        }
-        .clipped().blur(radius: preferences.blurredRatings.contains(rating ?? "") ? 18 : 0).accessibilityHidden(true)
+        CoverViewport(image: image)
+            .blur(radius: preferences.blurredRatings.contains(rating ?? "") ? 18 : 0)
+            .clipped().accessibilityHidden(true)
         .task(id: url) {
             image = nil
             if let url, let data = try? await ImageCache.shared.data(for: url), !Task.isCancelled { image = UIImage(data: data) }

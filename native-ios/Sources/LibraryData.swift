@@ -161,6 +161,7 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
     private func fetchAll(epoch: UUID) async throws -> [LibraryEntry] {
         var all: [LibraryEntry] = [], seen = Set<String>()
         for page in 1...1000 {
+            try Task.checkCancellation()
             let data = try await auth.request(path: "my/library?page=\(page)&limit=100&sort_by=updated_at_desc&schema=full", version: 2)
             guard epoch == auth.generation else { throw AccountError.stale }
             guard let root = try JSONSerialization.jsonObject(with: data) as? [String: Any], let rows = root["data"] as? [[String: Any]] else { throw AccountError.message("Unable to read the cloud library. Cached data was preserved.") }

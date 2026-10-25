@@ -69,7 +69,7 @@ struct LibraryView: View {
                                 LazyVStack { ForEach(rows) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { HStack { LibraryTile(entry: entry, compact: true); Spacer(); Image(systemName: "chevron.right") } }.buttonStyle(.plain) } }
                             }
                         }.padding()
-                    }.refreshable { await library.sync() }
+                    }.safeRefreshable { await library.sync() }
                 }.searchable(text: $query, prompt: "Search your library")
                 .searchSuggestions {
                     if preferences.librarySuggestions && !query.isEmpty {
@@ -106,8 +106,8 @@ struct LibraryTile: View {
         } else {
             VStack(alignment: .leading, spacing: 6) {
                 PolicyCover(url: entry.contentRating == nil ? nil : entry.coverURL, rating: entry.contentRating).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 12))
-                Text(preferences.title(entry)).font(.subheadline.bold()).lineLimit(2)
-                if let value = entry.percentage { ProgressView(value: value).accessibilityLabel("Reading progress") }
+                Text(preferences.title(entry)).font(.subheadline.bold()).lineLimit(2, reservesSpace: true)
+                Group { if let value = entry.percentage { ProgressView(value: value).accessibilityLabel("Reading progress") } else { Color.clear.accessibilityHidden(true) } }.frame(height: 6)
             }.accessibilityElement(children: .combine)
         }
     }
@@ -136,10 +136,6 @@ struct SeriesLibraryPanel: View {
                 Button { editing = .rereads } label: { HStack { Text("Rereads"); Spacer(); Text("\(entry.rereads)"); Image(systemName: "pencil") } }.disabled(!library.canWrite).accessibilityIdentifier("edit-rereads")
                 Button("Remove from library", systemImage: "trash", role: .destructive) { confirmDelete = true }.disabled(!library.canWrite)
             } else {
-                Button("Add to library", systemImage: "bookmark.badge.plus") {
-                    let state = ReadingStatus(rawValue: preferences.defaultState) ?? .planToRead
-                    if state == .completed { confirmCompleted = true } else { save(LibraryEntry.draft(series: series, state: state), create: true) }
-                }.buttonStyle(.borderedProminent).disabled(!library.canWrite)
                 Menu { ForEach(ReadingStatus.allCases) { state in Button(LocalizedStringKey(state.title)) {
                     let draft = LibraryEntry.draft(series: series, state: state)
                     if state == .completed { confirmCompleted = true } else { save(draft, create: true) }
@@ -150,7 +146,7 @@ struct SeriesLibraryPanel: View {
                 else if !library.online { Text("Offline — cached library is read-only").font(.caption).foregroundStyle(.secondary) }
                 else if !library.complete { Button("Sync before editing") { Task { await library.sync() } }.disabled(library.syncing) }
             }
-        }.padding().background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 20))
+        }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 20))
         .sheet(item: $editing) { kind in if let entry { LibraryEditSheet(entry: entry, kind: kind) } }
         .confirmationDialog("Mark as completed?", isPresented: $confirmCompleted, titleVisibility: .visible) {
             Button("Complete and fill known progress") { var next = entry ?? LibraryEntry.draft(series: series, state: .completed); next.state = .completed; if let n = next.totalChapters, n > 0 { next.chapters = n }; if let n = next.totalVolumes, n > 0 { next.volumes = n }; save(next, create: entry == nil) }

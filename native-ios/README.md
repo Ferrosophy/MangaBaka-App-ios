@@ -44,3 +44,31 @@ Manual CI only: full regression by default, focused unit follow-up available. De
 simulator-only fixtures (`M4_FIXTURES=1`) contain synthetic series/news and no credentials.
 Real PAT cross-device writes require an installed app and a token entered by its owner;
 synthetic screenshots must not be described as real-account validation.
+
+## M4 layout and translation follow-up (0.4.1)
+
+Every bitmap thumbnail now lives in a clipped GeometryReader viewport with aspect-fill;
+its intrinsic dimensions cannot size a card. Grid titles reserve two lines; progress,
+relationship, release and price rows reserve their own slots. Fullscreen zoom remains fit.
+Horizontal shelves snap to aligned cards and permit rendering into their safe margins.
+Refresh cleanup ends the native control and corrects only an overscrolled top offset;
+a 60-second cancellable deadline prevents an unbounded paginated read holding refresh.
+
+Details use one add-to-library state menu, a pinned glass tab strip, a continuous blurred
+cover backdrop extending through the top safe area, and aligned source-logo score cells.
+Seven source icons were extracted from MangaBaka's actual HTML; see ICON-SOURCES.json.
+SVG sources were converted to vector PDF; bitmap sources keep their original pixels.
+
+Translation is opt-in per description. Google Cloud Basic v2, Volcengine TranslateText
+(2020-06-01, cn-north-1), and Microsoft Translator v3 use user-owned credentials stored
+only in a separate ThisDeviceOnly Keychain service. No shared service keys are shipped.
+Google is selected by default; unconfigured providers lead to Settings. Test Connection
+always contacts the selected service, bypassing translation caches. Redirects are rejected
+so provider credentials cannot be forwarded to another host. Description and credential
+fingerprints partition the in-memory cache; switching descriptions/providers cancels stale
+UI updates. Only public descriptions, never MangaBaka PAT/library data, are translated.
+
+Verification adds independent Volcengine signing vectors, response fixtures for all three
+providers, cancellation/deadline tests, and layout screenshots with portrait/landscape/
+square/missing images, long/short titles and known/unknown progress. Live paid translation
+requires the user's own credentials and must be reported separately from fixture tests.

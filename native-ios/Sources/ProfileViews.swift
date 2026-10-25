@@ -29,7 +29,7 @@ struct ProfileView: View {
             }.padding()
         }.navigationTitle("Profile")
             .toolbar { ToolbarItem(placement: .topBarTrailing) { NavigationLink { SettingsView() } label: { Image(systemName: "gearshape") }.accessibilityLabel("Settings") } }
-            .refreshable { await library.sync() }
+            .safeRefreshable { await library.sync() }
             .task { await library.sync() }
             .confirmationDialog("Sign out?", isPresented: $confirmLogout, titleVisibility: .visible) {
                 Button("Sign out", role: .destructive) { do { try library.clearForLogout() } catch { failure = library.friendly(error) } }
@@ -40,7 +40,7 @@ struct ProfileView: View {
         VStack(alignment: .leading) {
             Text(LocalizedStringKey(title)).font(.headline)
             if rows.isEmpty { Text("Your library is empty.").foregroundStyle(.secondary) }
-            else { ScrollView(.horizontal, showsIndicators: false) { HStack(alignment: .top, spacing: 14) { ForEach(Array(rows.filter { preferences.allows($0.contentRating) }.prefix(10))) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { LibraryTile(entry: entry).frame(width: 120) }.buttonStyle(.plain) } } } }
+            else { ScrollView(.horizontal, showsIndicators: false) { HStack(alignment: .top, spacing: 14) { ForEach(Array(rows.filter { preferences.allows($0.contentRating) }.prefix(10))) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { LibraryTile(entry: entry).frame(width: 120) }.buttonStyle(.plain).accessibilityIdentifier("snapshot-\(title)-\(entry.id)") } }.scrollTargetLayout() }.scrollClipDisabled().scrollTargetBehavior(.viewAligned) }
         }
     }
 }
@@ -49,8 +49,8 @@ struct StatisticsGrid: View {
     var body: some View {
         LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
             ForEach(items.indices, id: \.self) { i in VStack(alignment: .leading, spacing: 12) {
-                HStack(alignment: .top) { Text(items[i].1).font(.largeTitle.bold()).minimumScaleFactor(0.5); Spacer(); Image(systemName: items[i].2).foregroundStyle(.secondary) }
-                Text(LocalizedStringKey(items[i].0)).font(.caption.bold()).foregroundStyle(.secondary)
+                HStack(alignment: .top) { Text(items[i].1).font(.largeTitle.bold()).monospacedDigit().lineLimit(1).minimumScaleFactor(0.5); Spacer(); Image(systemName: items[i].2).foregroundStyle(.secondary) }
+                Text(LocalizedStringKey(items[i].0)).font(.caption.bold()).lineLimit(2, reservesSpace: true).foregroundStyle(.secondary)
             }.frame(maxWidth: .infinity, minHeight: 90, alignment: .leading).padding().background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 20)) }
         }
     }

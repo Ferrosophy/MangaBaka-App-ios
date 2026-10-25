@@ -75,12 +75,8 @@ struct CandidateImage: View {
     @State private var failed = false
     @State private var retry = 0
     var body: some View {
-        ZStack {
-            Rectangle().fill(.quaternary)
-            if let image { Image(uiImage: image).resizable().scaledToFit() }
-            else if failed || urls.isEmpty { Image(systemName: "book.closed").foregroundStyle(.secondary) }
-            else { ProgressView() }
-        }.clipped().blur(radius: preferences.blurredRatings.contains(rating ?? "") ? 18 : 0)
+        CoverViewport(image: image, loading: image == nil && !failed && !urls.isEmpty)
+            .blur(radius: preferences.blurredRatings.contains(rating ?? "") ? 18 : 0).clipped()
         .task(id: urls.map(\.absoluteString).joined() + String(retry)) {
             image = nil; failed = false
             for url in urls { if let data = try? await ImageCache.shared.data(for: url), let decoded = UIImage(data: data), !Task.isCancelled { image = decoded; return } }
