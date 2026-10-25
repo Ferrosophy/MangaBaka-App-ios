@@ -23,6 +23,7 @@ final class LayoutRegressionTests: XCTestCase {
         capture("Layout-Refresh-settled")
     }
     func testRelatedScoresTabsAndTranslationConfiguration() {
+        executionTimeAllowance = 240
         let app = XCUIApplication()
         app.launchArguments = ["-language", "en", "-appearance", "light", "-startPage", "0"]
         app.launchEnvironment = ["M2_DETAIL": "1677", "M2_FIXTURES": "1"]
@@ -45,6 +46,25 @@ final class LayoutRegressionTests: XCTestCase {
             XCTAssertEqual(cards.element(boundBy: 0).frame.height, cards.element(boundBy: 1).frame.height, accuracy: 1)
         }
         capture("Layout-Related-aligned")
+        let tabs = app.scrollViews["detail-tabs"].firstMatch
+        for tab in ["Covers", "Similar", "Works"] {
+            let button = app.buttons["detail-tab-" + tab].firstMatch
+            if tab == "Covers" { tabs.swipeRight() }
+            for _ in 0..<8 {
+                if button.frame.minX >= tabs.frame.minX && button.frame.maxX <= tabs.frame.maxX { break }
+                tabs.swipeLeft()
+            }
+            button.tap()
+            let prefix = tab == "Covers" ? "cover-card-" : (tab == "Works" ? "work-cover-" : "series-card-")
+            let grid = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix))
+            XCTAssertTrue(grid.firstMatch.waitForExistence(timeout: 8))
+            if tab == "Works", grid.firstMatch.frame.width > app.frame.width * 0.6 { app.buttons["Change layout"].firstMatch.tap() }
+            if grid.count >= 2 {
+                XCTAssertEqual(grid.element(boundBy: 0).frame.width, grid.element(boundBy: 1).frame.width, accuracy: 1)
+                XCTAssertEqual(grid.element(boundBy: 0).frame.height, grid.element(boundBy: 1).frame.height, accuracy: 1)
+            }
+            capture("Layout-" + tab + "-grid-aligned")
+        }
     }
     func testProfileShelvesAndLibraryHaveEqualCards() {
         let app = XCUIApplication()
