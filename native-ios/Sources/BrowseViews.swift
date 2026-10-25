@@ -156,7 +156,7 @@ struct NewsView: View {
             }.buttonStyle(.plain).disabled(article.url == nil).accessibilityLabel(Text(r.text("title")))
             if article.total > 0 {
                 HStack { Text("Referenced series"); Text("\(visible.count) / \(article.total)") }.font(.caption.bold()).foregroundStyle(.secondary)
-                ScrollView(.horizontal, showsIndicators: false) { LazyHStack(alignment: .top, spacing: 12) { ForEach(visible) { card in NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card).frame(width: 100) }.buttonStyle(.plain) } }.scrollTargetLayout() }.scrollClipDisabled().scrollTargetBehavior(.viewAligned) }
+                ScrollView(.horizontal, showsIndicators: false) { LazyHStack(alignment: .top, spacing: 12) { ForEach(visible) { card in NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card).frame(width: 100) }.buttonStyle(.plain) } }.scrollTargetLayout() }.scrollClipDisabled().scrollTargetBehavior(.viewAligned)
             }
         }.padding(18).background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 24))
     }
