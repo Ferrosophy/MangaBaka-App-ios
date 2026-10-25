@@ -71,7 +71,7 @@ actor TranslationService: TextTranslating {
     func translate(_ text: String, provider: TranslationProvider, target: String, credentials: TranslationCredentials) async throws -> String {
         guard credentials.valid(for: provider) else { throw TranslationFailure.missing }
         let hash = SHA256.hash(data: Data(text.utf8)).map { String(format: "%02x", $0) }.joined()
-        let credentialHash = SHA256.hash(data: (try? JSONEncoder().encode(credentials)) ?? Data()).map { String(format: "%02x", $0) }.joined()
+        let credentialHash = SHA256.hash(data: Data([credentials.key, credentials.secret, credentials.region].joined(separator: "\u{0}").utf8)).map { String(format: "%02x", $0) }.joined()
         let key = provider.rawValue + "|" + target + "|" + hash + "|" + credentialHash
         if let result = cache[key] { return result }
         var translated: [String] = []
