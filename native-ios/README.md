@@ -17,7 +17,7 @@ Seven states; chapters/volumes/rereads/rating editing; completed-status confirma
 
 Read **`/v2/my/library`** (`entry`, `series`, `lists`) with full metadata; create/update/delete through documented `/v1/my/library/{series_id}`. Creates send one POST with all tracked fields; edits PATCH only changed fields. Follow pagination to completion before pruning remote deletions; malformed/incomplete pages preserve the old cache. Missing server timestamps remain unknown rather than inventing dates. Fractional chapters/volumes and scores are preserved. API limits: progress 0–10000, rereads 0–1000, score 0–100. **The API normalizes score 0 to null (not rated)**, so zero is excluded from mean-score statistics. Null progress/re-read counts display as zero.
 
-JSON backups contain reading history and cached metadata, never the PAT. Restore previews the target account and duplicate selections, keeps cloud records by default, never deletes cloud-only entries, and retries failed entries only. Restore is not a transaction across HTTP requests. No third-party import formats or account deletion.
+JSON backups contain reading history and cached metadata, never the PAT. They preserve private-entry flags, priority, reading links and recorded dates; ordinary progress edits do not overwrite these website fields. Custom website lists are outside M3. Restore previews the target account and duplicate selections, keeps cloud records by default, never deletes cloud-only entries, and retries failed entries only. Restore is not a transaction across HTTP requests. No third-party import formats or account deletion.
 
 ## Build and checks
 

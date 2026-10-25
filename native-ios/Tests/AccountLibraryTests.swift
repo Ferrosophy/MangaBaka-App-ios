@@ -176,4 +176,16 @@ private final class TestURLProtocol: URLProtocol {
         let text = String(data: try JSONEncoder().encode(b), encoding: .utf8)!
         XCTAssertFalse(text.contains("mb-test-access")); XCTAssertFalse(text.contains("x-api-key"))
     }
+    func testBackupPreservesPrivateTrackingAndDoesNotChangeItOnProgressEdit() throws {
+        var raw = row(); raw["is_private"] = true; raw["priority"] = 30; raw["read_link"] = "https://example.com/read"; raw["start_date"] = "2026-01-01"
+        let before = try LibraryEntry.parse(raw)
+        let backup = LibraryBackup(version: 1, exportedAt: Date(), accountName: "Test", entries: [before])
+        let restored = try LibraryBackup.decode(JSONEncoder().encode(backup)).entries[0]
+        XCTAssertEqual(restored.writeBody["is_private"] as? Bool, true)
+        XCTAssertEqual(restored.writeBody["start_date"] as? String, "2026-01-01")
+        var edited = restored; edited.chapters = 82
+        XCTAssertNil(LibraryRepository.changedFields(edited, previous: restored)["is_private"])
+        XCTAssertEqual(ReadingNumber.string(12.125), "12.125")
+    }
+
 }

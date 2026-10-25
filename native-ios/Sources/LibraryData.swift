@@ -25,6 +25,11 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
     var rereads: Int
     var rating: Double?
     var note: String? = nil
+    var isPrivate: Bool? = nil
+    var readLink: String? = nil
+    var priority: Int? = nil
+    var startDate: String? = nil
+    var finishDate: String? = nil
     var createdAt: Date?
     var updatedAt: Date?
     func displayTitle(_ locale: Locale) -> String { localizedTitles[locale.identifier.hasPrefix("zh") ? "zh" : "en"] ?? title }
@@ -53,7 +58,7 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
         return Self(remoteID: HomeCard.string(row["id"]), seriesID: card.id, title: card.title, localizedTitles: card.localizedTitles,
                     aliases: (series["titles"] as? [[String: Any]] ?? []).compactMap { $0["title"] as? String }, coverURL: card.image,
                     totalChapters: Double(HomeCard.string(series["total_chapters"])), totalVolumes: Double(HomeCard.string(series["final_volume"])), state: state,
-                    chapters: try number("progress_chapter"), volumes: try number("progress_volume"), rereads: Int(rereads), rating: rating, note: row["note"] as? String, createdAt: created, updatedAt: updated)
+                    chapters: try number("progress_chapter"), volumes: try number("progress_volume"), rereads: Int(rereads), rating: rating, note: row["note"] as? String, isPrivate: row["is_private"] as? Bool, readLink: row["read_link"] as? String, priority: (row["priority"] as? NSNumber)?.intValue, startDate: row["start_date"] as? String, finishDate: row["finish_date"] as? String, createdAt: created, updatedAt: updated)
     }
     static func date(_ raw: String) -> Date? {
         let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -63,10 +68,24 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
         let card = series.card
         return Self(remoteID: "", seriesID: series.id, title: card?.title ?? series.text("title"), localizedTitles: card?.localizedTitles ?? [:], aliases: [], coverURL: series.cover, totalChapters: Double(series.text("total_chapters")), totalVolumes: Double(series.text("final_volume")), state: state, chapters: 0, volumes: 0, rereads: 0, rating: nil, createdAt: Date(), updatedAt: Date())
     }
-    var writeBody: [String: Any] { ["state": state.rawValue, "progress_chapter": chapters, "progress_volume": volumes, "number_of_rereads": rereads, "rating": rating.map { $0 as Any } ?? NSNull(), "note": note.map { $0 as Any } ?? NSNull()] }
+    var writeBody: [String: Any] {
+        var body: [String: Any] = ["state": state.rawValue, "progress_chapter": chapters, "progress_volume": volumes, "number_of_rereads": rereads, "rating": rating.map { $0 as Any } ?? NSNull(), "note": note.map { $0 as Any } ?? NSNull()]
+        // Preserve website-only tracking fields when restoring a new record.
+        if let isPrivate { body["is_private"] = isPrivate }
+        if let readLink { body["read_link"] = readLink }
+        if let priority { body["priority"] = priority }
+        if let startDate { body["start_date"] = startDate }
+        if let finishDate { body["finish_date"] = finishDate }
+        return body
+    }
+    static func validRecordedDate(_ value: String) -> Bool {
+        if Self.date(value) != nil { return true }
+        let format = DateFormatter(); format.locale = Locale(identifier: "en_US_POSIX"); format.calendar = Calendar(identifier: .gregorian); format.timeZone = TimeZone(secondsFromGMT: 0); format.dateFormat = "yyyy-MM-dd"; format.isLenient = false
+        return format.date(from: value).map { format.string(from: $0) == value } ?? false
+    }
     func validateBackup() throws {
         guard Int(seriesID).map({ $0 > 0 }) == true, (0...10000).contains(chapters), (0...10000).contains(volumes), (0...1000).contains(rereads), rating.map({ (0...100).contains($0) }) ?? true,
-              !title.isEmpty, totalChapters.map({ $0 >= 0 }) ?? true, totalVolumes.map({ $0 >= 0 }) ?? true else { throw AccountError.message("The backup contains an invalid reading record.") }
+              !title.isEmpty, totalChapters.map({ $0 >= 0 }) ?? true, totalVolumes.map({ $0 >= 0 }) ?? true, priority.map({ (10...30).contains($0) }) ?? true, startDate.map(Self.validRecordedDate) ?? true, finishDate.map(Self.validRecordedDate) ?? true, readLink.map({ URL(string: $0)?.scheme != nil }) ?? true else { throw AccountError.message("The backup contains an invalid reading record.") }
     }
 }
 @Model final class LibraryCache {
@@ -189,6 +208,11 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
         if next.rereads != previous.rereads { body["number_of_rereads"] = next.rereads }
         if next.rating != previous.rating { body["rating"] = next.rating.map { $0 as Any } ?? NSNull() }
         if next.note != previous.note { body["note"] = next.note.map { $0 as Any } ?? NSNull() }
+        if let value = next.isPrivate, next.isPrivate != previous.isPrivate { body["is_private"] = value }
+        if let value = next.readLink, next.readLink != previous.readLink { body["read_link"] = value }
+        if let value = next.priority, next.priority != previous.priority { body["priority"] = value }
+        if let value = next.startDate, next.startDate != previous.startDate { body["start_date"] = value }
+        if let value = next.finishDate, next.finishDate != previous.finishDate { body["finish_date"] = value }
         return body
     }
     func remove(_ entry: LibraryEntry) async throws {
@@ -247,5 +271,5 @@ struct LibraryBackup: Codable {
 }
 
 enum ReadingNumber {
-    static func string(_ value: Double) -> String { value.formatted(.number.precision(.fractionLength(0...2)).grouping(.never)) }
+    static func string(_ value: Double) -> String { value.rounded() == value ? String(format: "%.0f", value) : String(value) }
 }
