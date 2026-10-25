@@ -140,14 +140,14 @@ jobs:
       timeout-minutes: 15
       run: 'set -euo pipefail
 
-        TEST_SELECTION=()
+        TEST_COMMAND=(xcodebuild test)
 
-        if [[ "$TEST_SCOPE" == "unit" ]]; then TEST_SELECTION=(-only-testing:MangaBakaNativeTests);
+        if [[ "$TEST_SCOPE" == "unit" ]]; then TEST_COMMAND+=(-only-testing:MangaBakaNativeTests);
         fi
 
         echo "Verification scope: $TEST_SCOPE"
 
-        xcodebuild test "${TEST_SELECTION[@]}" -parallel-testing-enabled NO -test-timeouts-enabled
+        "${TEST_COMMAND[@]}" -parallel-testing-enabled NO -test-timeouts-enabled
         YES -default-test-execution-time-allowance 120 -maximum-test-execution-time-allowance
         300 -project MangaBakaNative.xcodeproj -scheme MangaBakaNative -destination
         "platform=iOS Simulator,id=$M3_SIMULATOR" -destination-timeout 90 -resultBundlePath
