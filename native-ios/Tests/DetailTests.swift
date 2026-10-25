@@ -48,10 +48,11 @@ final class DetailTests: XCTestCase {
         XCTAssertTrue(page.records.isEmpty)
         XCTAssertThrowsError(try DetailPage.decode(Data(#"{"data":{}}"#.utf8)))
     }
-    func testHomepageUsesSeriesIDForUpcoming() {
-        let card = HomeCard.parse(["id": 100, "series_id": 1677, "sub_title": "Vol 1"], shelf: .upcoming)
+    func testSeriesMetadataPreservesContentRating() {
+        let card = HomeCard.parse(["id": 1677, "title": "Chainsaw Man", "content_rating": "suggestive", "native_title": "チェンソーマン"], shelf: .trending)
         XCTAssertEqual(card?.seriesID, "1677")
-        XCTAssertNil(HomeCard.parse(["id": 100, "series_id": NSNull(), "sub_title": "Unknown work"], shelf: .upcoming)?.seriesID)
+        XCTAssertEqual(card?.contentRating, "suggestive")
+        XCTAssertEqual(card?.nativeTitle, "チェンソーマン")
     }
     func testHierarchicalTags() {
         let groups = ResolvedTagGroup.resolve(names: ["Mafia", "Unknown tag"], paths: ["mafia": "Activities > Crimes > Organized Crime > Mafia"])

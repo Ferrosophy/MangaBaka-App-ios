@@ -5,9 +5,9 @@ struct BrowseView: View {
     var body: some View {
         List {
             Section {
-                NavigationLink("Search", systemImage: "magnifyingglass") { BrowseResultsView(title: "Search", query: BrowseQuery()) }
-                NavigationLink("Mix", systemImage: "shuffle") { MixView() }
-                NavigationLink("Discovery queue", systemImage: "sparkles") { DiscoveryQueueView() }
+                NavigationLink { BrowseResultsView(title: "Search", query: BrowseQuery()) } label: { Label("Search", systemImage: "magnifyingglass") }
+                NavigationLink { MixView() } label: { Label("Mix", systemImage: "shuffle") }
+                NavigationLink { DiscoveryQueueView() } label: { Label("Discovery queue", systemImage: "sparkles") }
             }
             ForEach(Self.types, id: \.0) { type in
                 Section(LocalizedStringKey(type.1)) {

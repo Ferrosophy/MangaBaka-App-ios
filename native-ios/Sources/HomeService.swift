@@ -55,8 +55,8 @@ struct HomeCard: Identifiable {
         var title = titles["en"] ?? json["title"] as? String ?? firstTitle ?? ""
         var image = imageURL(json["cover"] ?? json["cover_image"])
         var link = URL(string: "https://mangabaka.org/" + id)
-        var date: Date?
-        var volume = ""
+        let date: Date? = nil
+        let volume = ""
         var count: Int?
         if shelf == .publishers {
             title = string(json["name"])
@@ -69,7 +69,7 @@ struct HomeCard: Identifiable {
             link = URL(string: json["canonical_url"] as? String ?? "https://mangabaka.org/publishers/\(id)")
         }
         guard !title.isEmpty else { return nil }
-        return HomeCard(id: id, title: title, localizedTitles: titles, image: image, link: link, date: date, volume: volume, count: count, seriesID: shelf == .publishers ? nil : id, contentRating: json["content_rating"] as? String, nativeTitle: json["native_title"] as? String)
+        return HomeCard(id: id, title: title, localizedTitles: titles, image: image, link: link, date: date, volume: volume, count: count, seriesID: shelf == .publishers ? nil : id, contentRating: json["content_rating"] as? String, nativeTitle: (json["native_title"] as? String) ?? (json["titles"] as? [[String: Any]] ?? []).first { ($0["language"] as? String) == (json["original_language"] as? String) && ($0["traits"] as? [String] ?? []).contains("native") }?["title"] as? String)
     }
 }
 protocol HomeProviding {

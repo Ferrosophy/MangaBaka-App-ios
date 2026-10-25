@@ -25,7 +25,7 @@ JSON backups contain reading history and cached metadata, never the PAT. They pr
 
 Simulator review tests use a synthetic PAT and local mock API, exercising login and account UI/edits without touching real accounts. The review transport and memory-vault entry point compile **only for DEBUG simulator**, never Release/device IPA. Tests are not proof of real PAT account/device verification. Enter a real token **inside the installed app**, not in chat or GitHub, to verify actual account login, cross-device sync and Keychain persistence. No real user token has been used in CI.
 
-Public contract: https://mangabaka.org/api.json (security scheme `x-api-key`; PATs start with `mb-`). Root Browse/News remain M1 placeholders; M2 detail categories remain functional. The homepage upcoming-cover issue is separate. Source/API mappings derived from Oazzies/MangaBaka-App under Apache-2.0; artwork belongs to its providers. See LICENSE and https://mangabaka.org/data/api.
+Public contract: https://mangabaka.org/api.json (security scheme `x-api-key`; PATs start with `mb-`). M4 replaces the root Browse/News placeholders and removes the homepage Upcoming Releases shelf. M2 detail categories remain functional. Source/API mappings derived from Oazzies/MangaBaka-App under Apache-2.0; artwork belongs to its providers. See LICENSE and https://mangabaka.org/data/api.
 
 ## M4 (0.4.0)
 

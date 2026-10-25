@@ -124,6 +124,7 @@ struct DiscoveryQueueView: View {
     @State private var stale = false
     @State private var failure: String?
     @State private var confirmCompleted = false
+    @State private var queueKey = ""
     private var current: HomeCard? { cards.indices.contains(index) ? cards[index] : nil }
     var body: some View {
         ScrollView {
@@ -149,10 +150,13 @@ struct DiscoveryQueueView: View {
                     Button("Start again") { Task { await start() } }.buttonStyle(.borderedProminent)
                 }
                 if stale { Text("Your taste profile is updating.").font(.caption).foregroundStyle(.secondary) }
-                if let failure { Text(LocalizedStringKey(failure)); Button("Retry") { Task { await start() } } }
+                if let failure { Text(LocalizedStringKey(failure)); if current == nil { Button("Retry") { Task { await start() } } } }
             }.padding().frame(maxWidth: .infinity)
         }.navigationTitle("Discovery queue")
-            .task(id: "\(auth.generation)|\(preferences.policyKey)") { await start() }
+            .task(id: "\(auth.generation)|\(preferences.policyKey)") {
+                let key = "\(auth.generation)|\(preferences.policyKey)"
+                if queueKey != key || !loaded { queueKey = key; await start() }
+            }
             .confirmationDialog("Mark as completed?", isPresented: $confirmCompleted, titleVisibility: .visible) { Button("Complete and fill known progress") { save(.completed, fill: true) } }
     }
     private var defaultStatus: ReadingStatus { ReadingStatus(rawValue: preferences.defaultState) ?? .planToRead }
