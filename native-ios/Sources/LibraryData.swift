@@ -30,6 +30,8 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
     var priority: Int? = nil
     var startDate: String? = nil
     var finishDate: String? = nil
+    var contentRating: String? = nil
+    var nativeTitle: String? = nil
     var createdAt: Date?
     var updatedAt: Date?
     func displayTitle(_ locale: Locale) -> String { localizedTitles[locale.identifier.hasPrefix("zh") ? "zh" : "en"] ?? title }
@@ -58,7 +60,7 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
         return Self(remoteID: HomeCard.string(row["id"]), seriesID: card.id, title: card.title, localizedTitles: card.localizedTitles,
                     aliases: (series["titles"] as? [[String: Any]] ?? []).compactMap { $0["title"] as? String }, coverURL: card.image,
                     totalChapters: Double(HomeCard.string(series["total_chapters"])), totalVolumes: Double(HomeCard.string(series["final_volume"])), state: state,
-                    chapters: try number("progress_chapter"), volumes: try number("progress_volume"), rereads: Int(rereads), rating: rating, note: row["note"] as? String, isPrivate: row["is_private"] as? Bool, readLink: row["read_link"] as? String, priority: (row["priority"] as? NSNumber)?.intValue, startDate: row["start_date"] as? String, finishDate: row["finish_date"] as? String, createdAt: created, updatedAt: updated)
+                    chapters: try number("progress_chapter"), volumes: try number("progress_volume"), rereads: Int(rereads), rating: rating, note: row["note"] as? String, isPrivate: row["is_private"] as? Bool, readLink: row["read_link"] as? String, priority: (row["priority"] as? NSNumber)?.intValue, startDate: row["start_date"] as? String, finishDate: row["finish_date"] as? String, contentRating: card.contentRating, nativeTitle: card.nativeTitle, createdAt: created, updatedAt: updated)
     }
     static func date(_ raw: String) -> Date? {
         let f = ISO8601DateFormatter(); f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -66,7 +68,7 @@ struct LibraryEntry: Codable, Identifiable, Equatable {
     }
     static func draft(series: DetailRecord, state: ReadingStatus) -> Self {
         let card = series.card
-        return Self(remoteID: "", seriesID: series.id, title: card?.title ?? series.text("title"), localizedTitles: card?.localizedTitles ?? [:], aliases: [], coverURL: series.cover, totalChapters: Double(series.text("total_chapters")), totalVolumes: Double(series.text("final_volume")), state: state, chapters: 0, volumes: 0, rereads: 0, rating: nil, createdAt: Date(), updatedAt: Date())
+        return Self(remoteID: "", seriesID: series.id, title: card?.title ?? series.text("title"), localizedTitles: card?.localizedTitles ?? [:], aliases: [], coverURL: series.cover, totalChapters: Double(series.text("total_chapters")), totalVolumes: Double(series.text("final_volume")), state: state, chapters: 0, volumes: 0, rereads: 0, rating: nil, contentRating: card?.contentRating, nativeTitle: card?.nativeTitle, createdAt: Date(), updatedAt: Date())
     }
     var writeBody: [String: Any] {
         var body: [String: Any] = ["state": state.rawValue, "progress_chapter": chapters, "progress_volume": volumes, "number_of_rereads": rereads, "rating": rating.map { $0 as Any } ?? NSNull(), "note": note.map { $0 as Any } ?? NSNull()]

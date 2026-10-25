@@ -2,6 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ProfileView: View {
+    @Environment(Preferences.self) private var preferences
     @Environment(AuthSession.self) private var auth
     @Environment(LibraryRepository.self) private var library
     @State private var confirmLogout = false
@@ -39,7 +40,7 @@ struct ProfileView: View {
         VStack(alignment: .leading) {
             Text(LocalizedStringKey(title)).font(.headline)
             if rows.isEmpty { Text("Your library is empty.").foregroundStyle(.secondary) }
-            else { ScrollView(.horizontal, showsIndicators: false) { HStack(alignment: .top, spacing: 14) { ForEach(Array(rows.prefix(10))) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { LibraryTile(entry: entry).frame(width: 120) }.buttonStyle(.plain) } } } }
+            else { ScrollView(.horizontal, showsIndicators: false) { HStack(alignment: .top, spacing: 14) { ForEach(Array(rows.filter { preferences.allows($0.contentRating) }.prefix(10))) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { LibraryTile(entry: entry).frame(width: 120) }.buttonStyle(.plain) } } } }
         }
     }
 }
@@ -55,6 +56,7 @@ struct StatisticsGrid: View {
     }
 }
 struct StatisticsView: View {
+    @Environment(Preferences.self) private var preferences
     @Environment(LibraryRepository.self) private var library
     @Environment(AuthSession.self) private var auth
     @Environment(\.locale) private var locale
@@ -70,14 +72,14 @@ struct StatisticsView: View {
                     if s.mean == nil { Text("No ratings yet").foregroundStyle(.secondary) }
                     Text("Completion is completed series divided by all series. Finish rate is completed divided by completed plus dropped.").font(.footnote).foregroundStyle(.secondary)
                     if s.highest != nil || s.mostReread != nil { Text("Standout picks").font(.title2.bold()) }
-                    if let entry = s.highest { pick("Highest rated", entry: entry, value: "\(ReadingNumber.string(entry.rating ?? 0)) / 100") }
-                    if let entry = s.mostReread { pick("Most reread", entry: entry, value: "\(entry.rereads)") }
+                    if let entry = s.highest, preferences.allows(entry.contentRating) { pick("Highest rated", entry: entry, value: "\(ReadingNumber.string(entry.rating ?? 0)) / 100") }
+                    if let entry = s.mostReread, preferences.allows(entry.contentRating) { pick("Most reread", entry: entry, value: "\(entry.rereads)") }
                 }.padding()
             } }
         }.navigationTitle("Statistics")
     }
     private func pick(_ title: String, entry: LibraryEntry, value: String) -> some View {
-        NavigationLink { SeriesDetailView(id: entry.id) } label: { VStack(alignment: .leading, spacing: 12) { Text(LocalizedStringKey(title)).foregroundStyle(.secondary); Text(entry.displayTitle(locale)).font(.headline); Text(value) }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 20)) }.buttonStyle(.plain)
+        NavigationLink { SeriesDetailView(id: entry.id) } label: { VStack(alignment: .leading, spacing: 12) { Text(LocalizedStringKey(title)).foregroundStyle(.secondary); Text(preferences.title(entry)).font(.headline); Text(value) }.frame(maxWidth: .infinity, alignment: .leading).padding().background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 20)) }.buttonStyle(.plain)
     }
 }
 struct BackupDocument: FileDocument {

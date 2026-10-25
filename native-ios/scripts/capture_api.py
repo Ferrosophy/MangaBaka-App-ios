@@ -45,3 +45,25 @@ if series:
     print('SERIES_SHAPE', json.dumps({k: data.get(k) for k in ['native_title', 'anime', 'published', 'authors', 'tags']}, ensure_ascii=False)[:6000])
 if not series:
     raise SystemExit('Core series API could not be captured; see api-validation.json')
+
+# M4 public endpoints; report independently from authenticated account checks.
+for endpoint, params in [
+    ('v2/series/search', {'limit': 3, 'schema': 'full', 'sort_by': 'popularity_asc', 'type': 'manga'}),
+    ('v2/news', {'limit': 2}),
+    ('v2/series/mix', {'series': 1677, 'strict': 'false', 'limit': 3}),
+    ('v1/series/mix/seeds', {'series': [1677, 1078]}),
+    ('v1/tags', {'is_genre': 'true', 'limit': 100}),
+]:
+    try:
+        url = 'https://api.mangabaka.org/' + endpoint + '?' + urllib.parse.urlencode(params, doseq=True)
+        request = urllib.request.Request(url, headers={'User-Agent': 'MangaBakaNative-M4/0.4'})
+        with urllib.request.urlopen(request, timeout=30) as response:
+            payload = json.load(response)
+        if not isinstance(payload, dict) or not isinstance(payload.get('data'), list):
+            raise ValueError('missing list envelope')
+        (root / ('m4-' + endpoint.replace('/', '-') + '.json')).write_text(json.dumps(payload, ensure_ascii=False))
+        report.append({'path': endpoint, 'ok': True, 'items': len(payload['data'])})
+    except Exception as error:
+        report.append({'path': endpoint, 'ok': False, 'error': str(error)})
+pathlib.Path('api-validation.json').write_text(json.dumps(report, indent=2))
+print(json.dumps(report, indent=2))

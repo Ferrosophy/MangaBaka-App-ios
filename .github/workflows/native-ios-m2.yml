@@ -1,4 +1,4 @@
-name: Native iOS M3
+name: Native iOS M4
 'on':
   workflow_dispatch:
     inputs:
@@ -13,7 +13,7 @@ name: Native iOS M3
 permissions:
   contents: read
 concurrency:
-  group: native-m3-${{ github.ref }}
+  group: native-m4-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   api:
@@ -30,13 +30,13 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: Native-M3-API-validation
+        name: Native-M4-API-validation
         path: native-ios/api-validation.json
         if-no-files-found: ignore
         retention-days: 14
     - uses: actions/upload-artifact@v4
       with:
-        name: Native-M3-fixtures
+        name: Native-M4-fixtures
         path: native-ios/Sources/Fixtures/
         if-no-files-found: error
         retention-days: 14
@@ -55,7 +55,7 @@ jobs:
         xcode-version: '26.3'
     - uses: actions/download-artifact@v4
       with:
-        name: Native-M3-fixtures
+        name: Native-M4-fixtures
         path: native-ios/Sources/Fixtures
     - name: Generate Xcode project
       run: 'brew install xcodegen
@@ -78,9 +78,9 @@ jobs:
 
         cp -R "$APP" staging/Payload/
 
-        (cd staging && zip -qry ../dist/MangaBaka-Native-M3-unsigned.ipa Payload)
+        (cd staging && zip -qry ../dist/MangaBaka-Native-M4-unsigned.ipa Payload)
 
-        unzip -tq dist/MangaBaka-Native-M3-unsigned.ipa
+        unzip -tq dist/MangaBaka-Native-M4-unsigned.ipa
 
         (cd dist && shasum -a 256 *.ipa > SHA256SUMS)
 
@@ -95,7 +95,7 @@ jobs:
         '
     - uses: actions/upload-artifact@v4
       with:
-        name: MangaBaka-Native-M3-IPA
+        name: MangaBaka-Native-M4-IPA
         path: native-ios/dist/
         if-no-files-found: error
         retention-days: 14
@@ -114,7 +114,7 @@ jobs:
         xcode-version: latest-stable
     - uses: actions/download-artifact@v4
       with:
-        name: Native-M3-fixtures
+        name: Native-M4-fixtures
         path: native-ios/Sources/Fixtures
     - name: Generate Xcode project
       run: 'brew install xcodegen
@@ -163,14 +163,14 @@ jobs:
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: Native-M3-review-screenshots
+        name: Native-M4-review-screenshots
         path: native-ios/screenshots/
         if-no-files-found: ignore
         retention-days: 14
     - uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: Native-M3-test-results
+        name: Native-M4-test-results
         path: native-ios/TestResults.xcresult
         if-no-files-found: ignore
         retention-days: 7

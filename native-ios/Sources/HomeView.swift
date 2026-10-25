@@ -16,7 +16,7 @@ struct HomeView: View {
                             Text(LocalizedStringKey(shelf.title)).font(.title2.bold())
                             Spacer()
                             // The web discover page is the verified public discovery entry.
-                            if shelf == .trending || shelf == .upcoming {
+                            if shelf == .trending {
                                 Button { web = WebPage(url: discoveryURL(shelf)) } label: { Image(systemName: "arrow.up.right").frame(width: 44, height: 44) }
                                     .accessibilityLabel(Text("View on MangaBaka"))
                             }
@@ -67,7 +67,7 @@ struct HomeView: View {
         } else {
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(alignment: .top, spacing: 14) {
-                    ForEach(state.cards) { card in cardView(card, shelf: shelf) }
+                    ForEach(state.cards.filter { shelf == .publishers || preferences.allows($0.contentRating) }) { card in cardView(card, shelf: shelf) }
                 }.padding(.horizontal, 20)
             }.opacity(state.loading ? 0.5 : 1)
             if state.failed { Button("Unable to refresh. Retry") { Task { await model.load(shelf) } }.padding(.horizontal, 20) }
@@ -83,12 +83,12 @@ struct HomeView: View {
     private func cardLabel(_ card: HomeCard, shelf: Shelf) -> some View {
         Group {
             VStack(alignment: .leading, spacing: 8) {
-                CoverImage(url: card.image).frame(width: shelf == .publishers ? 52 : 140, height: shelf == .publishers ? 52 : 210).clipShape(RoundedRectangle(cornerRadius: 14))
+                PolicyCover(url: card.image, rating: card.contentRating).frame(width: shelf == .publishers ? 52 : 140, height: shelf == .publishers ? 52 : 210).clipShape(RoundedRectangle(cornerRadius: 14))
                 if let date = card.date {
                     Text(releaseDate(date)).font(.caption.weight(.semibold)).foregroundStyle(.green)
                 }
                 if !card.volume.isEmpty { Text("Volume \(card.volume)").font(.caption).foregroundStyle(.green) }
-                Text(card.displayTitle(locale: locale)).font(.subheadline.weight(.semibold)).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
+                Text(preferences.title(card)).font(.subheadline.weight(.semibold)).lineLimit(2).frame(maxWidth: .infinity, alignment: .leading)
                 if let count = card.count { Text("\(count) series").font(.caption).foregroundStyle(.secondary) }
             }
             .frame(width: 140, alignment: .leading)

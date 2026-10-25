@@ -27,6 +27,7 @@ struct SyncBanner: View {
     }
 }
 struct LibraryView: View {
+    @Environment(Preferences.self) private var preferences
     @Environment(AuthSession.self) private var auth
     @Environment(LibraryRepository.self) private var library
     @Environment(\.locale) private var locale
@@ -36,7 +37,7 @@ struct LibraryView: View {
     @AppStorage("library-sort") private var sort = "updated"
     @State private var backup = false
     private var rows: [LibraryEntry] {
-        library.entries.filter { $0.state == status && (query.isEmpty || ([$0.title] + Array($0.localizedTitles.values) + $0.aliases).contains { $0.localizedCaseInsensitiveContains(query) }) }.sorted {
+        library.entries.filter { $0.state == status && preferences.allows($0.contentRating) && (query.isEmpty || ([$0.title] + Array($0.localizedTitles.values) + $0.aliases).contains { $0.localizedCaseInsensitiveContains(query) }) }.sorted {
             switch sort {
             case "title": return $0.displayTitle(locale).localizedStandardCompare($1.displayTitle(locale)) == .orderedAscending
             case "rating": return $0.rating == $1.rating ? $0.title < $1.title : ($0.rating ?? -1) > ($1.rating ?? -1)
@@ -53,7 +54,7 @@ struct LibraryView: View {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack { ForEach(ReadingStatus.allCases) { s in
                             Button { status = s } label: {
-                                HStack { Text(LocalizedStringKey(s.title)); Text("\(library.entries.filter { $0.state == s }.count)") }.padding(.horizontal, 12).padding(.vertical, 10).background(status == s ? Color.green.opacity(0.22) : .clear, in: Capsule())
+                                HStack { Text(LocalizedStringKey(s.title)); Text("\(library.entries.filter { $0.state == s && preferences.allows($0.contentRating) }.count)") }.padding(.horizontal, 12).padding(.vertical, 10).background(status == s ? Color.green.opacity(0.22) : .clear, in: Capsule())
                             }.buttonStyle(.plain).accessibilityIdentifier("library-status-\(s.rawValue)").accessibilityAddTraits(status == s ? .isSelected : [])
                         } }.padding(.horizontal)
                     }
@@ -70,6 +71,11 @@ struct LibraryView: View {
                         }.padding()
                     }.refreshable { await library.sync() }
                 }.searchable(text: $query, prompt: "Search your library")
+                .searchSuggestions {
+                    if preferences.librarySuggestions && !query.isEmpty {
+                        ForEach(Array(library.entries.filter { preferences.allows($0.contentRating) && ([$0.title] + $0.aliases + Array($0.localizedTitles.values)).contains { $0.localizedCaseInsensitiveContains(query) } }.prefix(8))) { entry in Text(preferences.title(entry)).searchCompletion(preferences.title(entry)) }
+                    }
+                }
             }
         }
         .navigationTitle("Library")
@@ -90,22 +96,24 @@ struct LibraryView: View {
     }
 }
 struct LibraryTile: View {
+    @Environment(Preferences.self) private var preferences
     let entry: LibraryEntry
     var compact = false
     @Environment(\.locale) private var locale
     var body: some View {
         if compact {
-            HStack { CandidateImage(urls: entry.coverURL.map { [$0] } ?? []).frame(width: 55, height: 82).clipShape(RoundedRectangle(cornerRadius: 8)); VStack(alignment: .leading) { Text(entry.displayTitle(locale)).font(.headline); Text(LocalizedStringKey(entry.state.title)).font(.caption).foregroundStyle(.secondary); Text("\(ReadingNumber.string(entry.chapters)) chapters · \(ReadingNumber.string(entry.volumes)) volumes").font(.caption) } }.frame(maxWidth: .infinity, alignment: .leading)
+            HStack { PolicyCover(url: entry.contentRating == nil ? nil : entry.coverURL, rating: entry.contentRating).frame(width: 55, height: 82).clipShape(RoundedRectangle(cornerRadius: 8)); VStack(alignment: .leading) { Text(preferences.title(entry)).font(.headline); Text(LocalizedStringKey(entry.state.title)).font(.caption).foregroundStyle(.secondary); Text("\(ReadingNumber.string(entry.chapters)) chapters · \(ReadingNumber.string(entry.volumes)) volumes").font(.caption) } }.frame(maxWidth: .infinity, alignment: .leading)
         } else {
             VStack(alignment: .leading, spacing: 6) {
-                CandidateImage(urls: entry.coverURL.map { [$0] } ?? []).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 12))
-                Text(entry.displayTitle(locale)).font(.subheadline.bold()).lineLimit(2)
+                PolicyCover(url: entry.contentRating == nil ? nil : entry.coverURL, rating: entry.contentRating).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 12))
+                Text(preferences.title(entry)).font(.subheadline.bold()).lineLimit(2)
                 if let value = entry.percentage { ProgressView(value: value).accessibilityLabel("Reading progress") }
             }.accessibilityElement(children: .combine)
         }
     }
 }
 struct SeriesLibraryPanel: View {
+    @Environment(Preferences.self) private var preferences
     let series: DetailRecord
     @Environment(AuthSession.self) private var auth
     @Environment(LibraryRepository.self) private var library
@@ -128,6 +136,10 @@ struct SeriesLibraryPanel: View {
                 Button { editing = .rereads } label: { HStack { Text("Rereads"); Spacer(); Text("\(entry.rereads)"); Image(systemName: "pencil") } }.disabled(!library.canWrite).accessibilityIdentifier("edit-rereads")
                 Button("Remove from library", systemImage: "trash", role: .destructive) { confirmDelete = true }.disabled(!library.canWrite)
             } else {
+                Button("Add to library", systemImage: "bookmark.badge.plus") {
+                    let state = ReadingStatus(rawValue: preferences.defaultState) ?? .planToRead
+                    if state == .completed { confirmCompleted = true } else { save(LibraryEntry.draft(series: series, state: state), create: true) }
+                }.buttonStyle(.borderedProminent).disabled(!library.canWrite)
                 Menu { ForEach(ReadingStatus.allCases) { state in Button(LocalizedStringKey(state.title)) {
                     let draft = LibraryEntry.draft(series: series, state: state)
                     if state == .completed { confirmCompleted = true } else { save(draft, create: true) }
@@ -159,6 +171,7 @@ struct SeriesLibraryPanel: View {
 }
 enum LibraryEditKind: String, Identifiable { case chapters = "Update chapters", volumes = "Update volumes", rating = "Set your rating", rereads = "Update rereads"; var id: String { rawValue } }
 struct LibraryEditSheet: View {
+    @Environment(Preferences.self) private var preferences
     let entry: LibraryEntry
     let kind: LibraryEditKind
     @Environment(LibraryRepository.self) private var library
@@ -185,7 +198,7 @@ struct LibraryEditSheet: View {
                         Button { number = ReadingNumber.string(min(total.flatMap { $0 > 0 ? $0 : nil } ?? 10000, (value ?? 0) + 1)) } label: { Image(systemName: "plus.circle") }.buttonStyle(.borderless).accessibilityLabel("Increase")
                     }
                     if kind == .rating {
-                        Slider(value: Binding(get: { Double(value ?? 0) }, set: { number = String(Int($0.rounded())) }), in: 0...100, step: 1).accessibilityLabel("Personal rating")
+                        Slider(value: Binding(get: { Double(value ?? 0) }, set: { number = String(Int($0.rounded())) }), in: 0...100, step: preferences.ratingStep).accessibilityLabel("Personal rating")
                         Text("MangaBaka treats a score of 0 as not rated.").font(.footnote).foregroundStyle(.secondary)
                         Button("Clear rating", role: .destructive) { commit(clear: true) }.disabled(!library.canWrite || saving)
                     }

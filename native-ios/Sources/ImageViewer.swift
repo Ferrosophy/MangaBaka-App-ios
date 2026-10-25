@@ -13,6 +13,9 @@ struct GalleryPresentation: Identifiable {
     let selectedID: String
 }
 struct ImageViewer: View {
+    @Environment(Preferences.self) private var preferences
+    @Environment(\.coverRating) private var rating
+    @State private var revealed = false
     let items: [GalleryItem]
     @State var selected: String
     @Environment(\.dismiss) private var dismiss
@@ -21,6 +24,8 @@ struct ImageViewer: View {
             TabView(selection: $selected) {
                 ForEach(items) { item in ZoomImage(urls: item.urls, active: abs((items.firstIndex(where: { $0.id == selected }) ?? 0) - (items.firstIndex(where: { $0.id == item.id }) ?? 0)) <= 1).tag(item.id).accessibilityLabel(item.title) }
             }.tabViewStyle(.page).background(.black)
+            .blur(radius: !revealed && preferences.blurredRatings.contains(rating ?? "") ? 24 : 0)
+            .overlay { if !revealed && preferences.blurredRatings.contains(rating ?? "") { Button("Reveal covers temporarily") { revealed = true }.buttonStyle(.borderedProminent) } }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) { Button("Done") { dismiss() } }
                 ToolbarItem(placement: .principal) { Text(items.first(where: { $0.id == selected })?.title ?? "").lineLimit(1).foregroundStyle(.white).accessibilityIdentifier("gallery-title") }
@@ -63,6 +68,8 @@ struct ZoomImage: View {
     }
 }
 struct CandidateImage: View {
+    @Environment(Preferences.self) private var preferences
+    @Environment(\.coverRating) private var rating
     let urls: [URL]
     @State private var image: UIImage?
     @State private var failed = false
@@ -73,7 +80,7 @@ struct CandidateImage: View {
             if let image { Image(uiImage: image).resizable().scaledToFit() }
             else if failed || urls.isEmpty { Image(systemName: "book.closed").foregroundStyle(.secondary) }
             else { ProgressView() }
-        }.clipped()
+        }.clipped().blur(radius: preferences.blurredRatings.contains(rating ?? "") ? 18 : 0)
         .task(id: urls.map(\.absoluteString).joined() + String(retry)) {
             image = nil; failed = false
             for url in urls { if let data = try? await ImageCache.shared.data(for: url), let decoded = UIImage(data: data), !Task.isCancelled { image = decoded; return } }

@@ -26,6 +26,8 @@ actor ImageCache {
     func clear() { generation += 1; try? FileManager.default.removeItem(at: folder); URLCache.shared.removeAllCachedResponses() }
 }
 struct CoverImage: View {
+    @Environment(Preferences.self) private var preferences
+    @Environment(\.coverRating) private var rating
     let url: URL?
     @State private var image: UIImage?
     var body: some View {
@@ -34,7 +36,7 @@ struct CoverImage: View {
             if let image { Image(uiImage: image).resizable().scaledToFill() }
             else { Image(systemName: "book.closed").font(.largeTitle).foregroundStyle(.secondary) }
         }
-        .clipped().accessibilityHidden(true)
+        .clipped().blur(radius: preferences.blurredRatings.contains(rating ?? "") ? 18 : 0).accessibilityHidden(true)
         .task(id: url) {
             image = nil
             if let url, let data = try? await ImageCache.shared.data(for: url), !Task.isCancelled { image = UIImage(data: data) }

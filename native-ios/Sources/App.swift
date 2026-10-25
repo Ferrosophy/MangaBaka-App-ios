@@ -4,11 +4,29 @@ import Observation
 import SwiftData
 
 @Observable final class Preferences {
-    private let defaults: UserDefaults
+    let defaults: UserDefaults
     var language: String { didSet { defaults.set(language, forKey: "language") } }
     var appearance: String { didSet { defaults.set(appearance, forKey: "appearance") } }
+    var startPage: Int { didSet { defaults.set(startPage, forKey: "startPage") } }
+    var titleLanguage: String { didSet { defaults.set(titleLanguage, forKey: "titleLanguage") } }
+    var browseSuggestions: Bool { didSet { defaults.set(browseSuggestions, forKey: "browseSuggestions") } }
+    var librarySuggestions: Bool { didSet { defaults.set(librarySuggestions, forKey: "librarySuggestions") } }
+    var ratingStep: Double { didSet { defaults.set(ratingStep, forKey: "ratingStep") } }
+    var defaultState: String { didSet { defaults.set(defaultState, forKey: "defaultState") } }
+    var visibleRatings: [String] { didSet { defaults.set(visibleRatings, forKey: "visibleRatings") } }
+    var blurredRatings: [String] { didSet { defaults.set(blurredRatings, forKey: "blurredRatings") } }
+    var hideLibrary: Bool { didSet { defaults.set(hideLibrary, forKey: "hideLibrary") } }
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        startPage = defaults.integer(forKey: "startPage")
+        titleLanguage = defaults.string(forKey: "titleLanguage") ?? "auto"
+        browseSuggestions = defaults.object(forKey: "browseSuggestions") as? Bool ?? true
+        librarySuggestions = defaults.bool(forKey: "librarySuggestions")
+        ratingStep = defaults.object(forKey: "ratingStep") as? Double ?? 10
+        defaultState = defaults.string(forKey: "defaultState") ?? "plan_to_read"
+        visibleRatings = defaults.stringArray(forKey: "visibleRatings") ?? ["safe", "suggestive"]
+        blurredRatings = defaults.stringArray(forKey: "blurredRatings") ?? ["erotica", "pornographic"]
+        hideLibrary = defaults.bool(forKey: "hideLibrary")
         language = defaults.string(forKey: "language") ?? "system"
         appearance = defaults.string(forKey: "appearance") ?? "system"
     }
@@ -81,15 +99,16 @@ struct SafariView: UIViewControllerRepresentable {
 struct RootView: View {
     @Environment(Preferences.self) private var preferences
     @State private var tab = 0
+    @State private var started = false
     var body: some View {
         TabView(selection: $tab) {
             NavigationStack { HomeView() }.tabItem { Label("Home", systemImage: "house") }.tag(0)
             NavigationStack { LibraryView() }.tabItem { Label("Library", systemImage: "bookmark") }.tag(1)
-            NavigationStack { PendingView(title: "Browse", icon: "safari") }.tabItem { Label("Browse", systemImage: "safari") }.tag(2)
-            NavigationStack { PendingView(title: "News", icon: "newspaper") }.tabItem { Label("News", systemImage: "newspaper") }.tag(3)
+            NavigationStack { BrowseView() }.tabItem { Label("Browse", systemImage: "safari") }.tag(2)
+            NavigationStack { NewsView() }.tabItem { Label("News", systemImage: "newspaper") }.tag(3)
             NavigationStack { ProfileView()
             }.tabItem { Label("Profile", systemImage: "person") }.tag(4)
-        }
+        }.onAppear { if !started { started = true; tab = (0...4).contains(preferences.startPage) ? preferences.startPage : 0 } }
     }
 }
 struct PendingView: View {

@@ -2,10 +2,10 @@ import Foundation
 import Observation
 
 enum Shelf: String, CaseIterable, Identifiable {
-    case trending, upcoming, publishers, rising, gems, recent
+    case trending, publishers, rising, gems, recent
     var id: String { rawValue }
     var title: String {
-        switch self { case .trending: "Trending"; case .upcoming: "Upcoming Releases"; case .publishers: "Popular Publishers"; case .rising: "Rising"; case .gems: "Hidden Gems"; case .recent: "New Releases" }
+        switch self { case .trending: "Trending"; case .publishers: "Popular Publishers"; case .rising: "Rising"; case .gems: "Hidden Gems"; case .recent: "New Releases" }
     }
 }
 struct HomeCard: Identifiable {
@@ -18,6 +18,8 @@ struct HomeCard: Identifiable {
     let volume: String
     let count: Int?
     var seriesID: String? = nil
+    var contentRating: String? = nil
+    var nativeTitle: String? = nil
     func displayTitle(locale: Locale) -> String {
         let key = locale.identifier.hasPrefix("zh") ? "zh" : "en"
         return localizedTitles[key] ?? title
@@ -65,17 +67,9 @@ struct HomeCard: Identifiable {
             }
             count = Int(string(json["series_count"]))
             link = URL(string: json["canonical_url"] as? String ?? "https://mangabaka.org/publishers/\(id)")
-        } else if shelf == .upcoming {
-            title = (json["collections"] as? [[String: Any]])?.first?["title"] as? String ?? string(json["sub_title"])
-            image = imageURL((json["images"] as? [[String: Any]])?.first?["image"])
-            let formatter = DateFormatter(); formatter.locale = Locale(identifier: "en_US_POSIX"); formatter.timeZone = TimeZone(secondsFromGMT: 0); formatter.dateFormat = "yyyy-MM-dd"
-            date = formatter.date(from: String(string(json["release_date"]).prefix(10)))
-            volume = string(json["sequence_string"])
-            let seriesID = string(json["series_id"])
-            link = seriesID.isEmpty ? nil : URL(string: "https://mangabaka.org/\(seriesID)")
         }
         guard !title.isEmpty else { return nil }
-        return HomeCard(id: id, title: title, localizedTitles: titles, image: image, link: link, date: date, volume: volume, count: count, seriesID: shelf == .publishers ? nil : (shelf == .upcoming ? (string(json["series_id"]).isEmpty ? nil : string(json["series_id"])) : id))
+        return HomeCard(id: id, title: title, localizedTitles: titles, image: image, link: link, date: date, volume: volume, count: count, seriesID: shelf == .publishers ? nil : id, contentRating: json["content_rating"] as? String, nativeTitle: json["native_title"] as? String)
     }
 }
 protocol HomeProviding {
@@ -89,7 +83,6 @@ struct HomeService: HomeProviding {
         case .trending:
             query.append(URLQueryItem(name: "sort_by", value: days == 30 ? "trending_30d" : "trending_7d"))
             if !type.isEmpty { query.append(URLQueryItem(name: "type", value: type)) }
-        case .upcoming: path = "/v1/works/upcoming"; query = [URLQueryItem(name: "page", value: "1"), URLQueryItem(name: "per_page", value: "25")]
         case .publishers: path = "/v2/publishers"; query = [URLQueryItem(name: "sort_by", value: "series_count_desc"), URLQueryItem(name: "limit", value: "16")]
         case .rising: path = "/v2/series/discover/rising"; query.append(URLQueryItem(name: "window_days", value: "7"))
         case .gems: path = "/v2/series/discover/hidden-gems"

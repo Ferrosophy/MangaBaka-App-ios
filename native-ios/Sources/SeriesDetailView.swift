@@ -10,13 +10,27 @@ struct SeriesDetailView: View {
     @State private var offsets: [DetailTab: CGFloat] = [:]
     @State private var restoringScroll = false
     @State private var compactTitle = false
+    @State private var allowedHidden = false
+    @State private var revealCover = false
     @Environment(\.locale) private var locale
     @Environment(Preferences.self) private var preferences
     init(id: String, preview: HomeCard? = nil) { self.preview = preview; _model = State(initialValue: DetailModel(id: id)) }
-    private var title: String { model.series?.card?.displayTitle(locale: locale) ?? preview?.displayTitle(locale: locale) ?? preferences.text("Series") }
+    private var title: String { model.series?.card.map { preferences.title($0) } ?? preview.map { preferences.title($0) } ?? preferences.text("Series") }
     private var cover: URL? { model.series?.cover ?? preview?.image }
     private var originalCover: URL? { model.series?.fullSizeCoverCandidates.first ?? cover }
+    private var contentRating: String? { model.series?.card?.contentRating ?? preview?.contentRating }
     var body: some View {
+        Group {
+            if !preferences.allows(contentRating) && !allowedHidden {
+                ContentUnavailableView {
+                    Label("Hidden content", systemImage: "eye.slash")
+                } description: { Text("This series is hidden by your content preferences.") } actions: {
+                    Button("View temporarily") { allowedHidden = true }
+                }.task { await model.load() }
+            } else { detailBody }
+        }.environment(\.coverRating, contentRating)
+    }
+    private var detailBody: some View {
         ScrollView {
             LazyVStack(spacing: 20, pinnedViews: [.sectionHeaders]) {
                 hero
@@ -46,7 +60,9 @@ struct SeriesDetailView: View {
         .task { await model.loadTaxonomy() }
         .task(id: selected) { await loadSelected() }
         .sheet(item: $web) { SafariView(url: $0.url).ignoresSafeArea() }
-        .fullScreenCover(item: $gallery) { presentation in ImageViewer(items: presentation.items, selected: presentation.selectedID) }
+        .overlay(alignment: .bottom) { if preferences.blurredRatings.contains(contentRating ?? "") && !revealCover { Button("Reveal covers temporarily") { revealCover = true }.buttonStyle(.borderedProminent).padding() } }
+        .environment(\.coverRating, revealCover ? "safe" : contentRating)
+        .fullScreenCover(item: $gallery) { presentation in ImageViewer(items: presentation.items, selected: presentation.selectedID).environment(preferences).environment(\.coverRating, revealCover ? "safe" : contentRating) }
         .accessibilityIdentifier("series-detail")
     }
     private func selectTab(_ tab: DetailTab) {
@@ -177,8 +193,8 @@ struct SeriesGrid: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: listStyle ? 1 : columns), alignment: .leading, spacing: 18) {
             ForEach(cards) { card in
                 NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: {
-                    if listStyle { HStack { CoverImage(url: card.image).frame(width: 60, height: 90).clipShape(RoundedRectangle(cornerRadius: 8)); Text(card.displayTitle(locale: locale)).frame(maxWidth: .infinity, alignment: .leading) } }
-                    else { VStack(alignment: .leading) { CandidateImage(urls: card.image.map { [$0] } ?? []).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(card.displayTitle(locale: locale)).font(.caption.weight(.semibold)).lineLimit(2); if let relation = relation(card.id) { Text(preferences.text(relation)).font(.caption).foregroundStyle(.secondary) } } }
+                    if listStyle { HStack { PolicyCover(url: card.image, rating: card.contentRating).frame(width: 60, height: 90).clipShape(RoundedRectangle(cornerRadius: 8)); Text(preferences.title(card)).frame(maxWidth: .infinity, alignment: .leading) } }
+                    else { VStack(alignment: .leading) { PolicyCover(url: card.image, rating: card.contentRating).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(preferences.title(card)).font(.caption.weight(.semibold)).lineLimit(2); if let relation = relation(card.id) { Text(preferences.text(relation)).font(.caption).foregroundStyle(.secondary) } } }
                 }.buttonStyle(.plain).accessibilityIdentifier("series-card-\(card.id)")
             }
         }
@@ -189,7 +205,7 @@ struct SeriesGrid: View {
     }
     private func cards() -> [HomeCard] {
         var seen = Set<String>()
-        return records.compactMap { ($0.values["series"] as? [String: Any]).flatMap { HomeCard.parse($0, shelf: .trending) } ?? $0.card }.filter { $0.id != currentID && seen.insert($0.id).inserted }
+        return records.compactMap { ($0.values["series"] as? [String: Any]).flatMap { HomeCard.parse($0, shelf: .trending) } ?? $0.card }.filter { $0.id != currentID && preferences.allows($0.contentRating) && seen.insert($0.id).inserted }
     }
 }
 struct SimilarContent: View {
