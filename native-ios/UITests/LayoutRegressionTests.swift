@@ -16,11 +16,20 @@ final class LayoutRegressionTests: XCTestCase {
         XCTAssertEqual(one.frame.minY, two.frame.minY, accuracy: 1)
         capture("Layout-Ranking-portrait-landscape-square-missing-Dark")
         let baseline = one.frame.minY
+        func drawerHeight() -> CGFloat {
+            let field = app.searchFields.firstMatch
+            return field.exists && field.isHittable ? field.frame.height + 16 : 0
+        }
+        let initialDrawer = drawerHeight()
         let scroll = app.scrollViews.firstMatch
-        scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25)).press(forDuration: 0.1, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.75)))
-        let settled = NSPredicate { _, _ in one.exists && abs(one.frame.minY - baseline) < 20 }
-        expectation(for: settled, evaluatedWith: nil); waitForExpectations(timeout: 12)
-        capture("Layout-Refresh-settled")
+        for attempt in 1...2 {
+            scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.25)).press(forDuration: 0.1, thenDragTo: scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.75)))
+            // Pulling down legitimately reveals the native navigation search drawer.
+            // Subtract its measured height, but reject any additional refresh inset.
+            let settled = NSPredicate { _, _ in one.exists && abs(one.frame.minY - baseline - (drawerHeight() - initialDrawer)) < 20 }
+            expectation(for: settled, evaluatedWith: nil); waitForExpectations(timeout: 12)
+            capture("Layout-Refresh-settled-\(attempt)")
+        }
     }
     func testRelatedScoresTabsAndTranslationConfiguration() {
         executionTimeAllowance = 240

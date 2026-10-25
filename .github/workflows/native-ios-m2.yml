@@ -9,6 +9,7 @@ name: Native iOS M4
         - full
         - unit
         - layout
+        - refresh
         default: full
         required: true
 permissions:
@@ -42,6 +43,7 @@ jobs:
         if-no-files-found: error
         retention-days: 14
   build-ipa:
+    if: ${{ inputs.test_scope != 'refresh' }}
     needs: api
     runs-on: macos-15
     timeout-minutes: 25
@@ -101,6 +103,7 @@ jobs:
         if-no-files-found: error
         retention-days: 14
   test:
+    if: ${{ always() && !cancelled() && needs.api.result == 'success' && (needs.build-ipa.result == 'success' || inputs.test_scope == 'refresh') }}
     needs: [api, build-ipa]
     runs-on: macos-26
     timeout-minutes: 25
@@ -148,6 +151,9 @@ jobs:
 
         if [[ "$TEST_SCOPE" == "layout" ]]; then TEST_COMMAND+=(-only-testing:MangaBakaNativeTests
         -only-testing:MangaBakaNativeUITests/LayoutRegressionTests -only-testing:MangaBakaNativeUITests/DetailNavigationTests);
+        fi
+
+        if [[ "$TEST_SCOPE" == "refresh" ]]; then TEST_COMMAND+=(-only-testing:MangaBakaNativeUITests/LayoutRegressionTests/testGridFillRefreshAndDarkLayout);
         fi
 
         echo "Verification scope: $TEST_SCOPE"
