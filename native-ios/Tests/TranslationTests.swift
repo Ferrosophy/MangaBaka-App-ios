@@ -67,3 +67,40 @@ private struct SlowTranslation: TextTranslating {
         try? await Task.sleep(for: .milliseconds(30)); return "Delayed translation"
     }
 }
+
+final class TranslationTransportTests: XCTestCase {
+    func testCachePartitioningConnectionTestAndRateLimit() async throws {
+        let config = URLSessionConfiguration.ephemeral; config.protocolClasses = [TranslationMockProtocol.self]
+        TranslationMockProtocol.reset()
+        let service = TranslationService(session: URLSession(configuration: config))
+        let a = TranslationCredentials(key: "key-a"), b = TranslationCredentials(key: "key-b")
+        _ = try await service.translate("Hello", provider: .google, target: "zh-Hans", credentials: a)
+        _ = try await service.translate("Hello", provider: .google, target: "zh-Hans", credentials: a)
+        XCTAssertEqual(TranslationMockProtocol.count, 1)
+        _ = try await service.translate("Hello", provider: .google, target: "en", credentials: a)
+        _ = try await service.translate("Hello", provider: .google, target: "en", credentials: b)
+        XCTAssertEqual(TranslationMockProtocol.count, 3)
+        try await service.checkConnection(provider: .google, target: "en", credentials: b)
+        XCTAssertEqual(TranslationMockProtocol.count, 4)
+        TranslationMockProtocol.setStatus(429)
+        do { _ = try await service.translate("Other", provider: .google, target: "en", credentials: a); XCTFail("Expected rate limit") }
+        catch TranslationFailure.http(let code) { XCTAssertEqual(code, 429) }
+    }
+}
+private final class TranslationMockProtocol: URLProtocol {
+    private static let lock = NSLock()
+    private static var requests = 0
+    private static var status = 200
+    static var count: Int { lock.lock(); defer { lock.unlock() }; return requests }
+    static func reset() { lock.lock(); defer { lock.unlock() }; requests = 0; status = 200 }
+    static func setStatus(_ value: Int) { lock.lock(); defer { lock.unlock() }; status = value }
+    override class func canInit(with request: URLRequest) -> Bool { request.url?.host == "translation.googleapis.com" }
+    override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
+    override func startLoading() {
+        Self.lock.lock(); Self.requests += 1; let status = Self.status; Self.lock.unlock()
+        let data = Data(#"{"data":{"translations":[{"translatedText":"你好"}]}}"#.utf8)
+        client?.urlProtocol(self, didReceive: HTTPURLResponse(url: request.url!, statusCode: status, httpVersion: nil, headerFields: nil)!, cacheStoragePolicy: .notAllowed)
+        client?.urlProtocol(self, didLoad: data); client?.urlProtocolDidFinishLoading(self)
+    }
+    override func stopLoading() {}
+}

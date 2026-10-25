@@ -32,9 +32,10 @@ struct CoverImage: View {
     @Environment(Preferences.self) private var preferences
     @Environment(\.coverRating) private var rating
     let url: URL?
+    var mode: ContentMode = .fill
     @State private var image: UIImage?
     var body: some View {
-        CoverViewport(image: image)
+        CoverViewport(image: image, mode: mode)
             .blur(radius: preferences.blurredRatings.contains(rating ?? "") ? 18 : 0)
             .clipped().accessibilityHidden(true)
         .task(id: url) {

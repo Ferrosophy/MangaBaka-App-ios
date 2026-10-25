@@ -4,12 +4,13 @@ import SwiftUI
 struct CoverViewport: View {
     let image: UIImage?
     var loading = false
+    var mode: ContentMode = .fill
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 Rectangle().fill(.quaternary)
                 if let image {
-                    Image(uiImage: image).resizable().scaledToFill()
+                    Image(uiImage: image).resizable().aspectRatio(contentMode: mode)
                         .frame(width: geometry.size.width, height: geometry.size.height)
                 } else if loading { ProgressView() }
                 else { Image(systemName: "book.closed").font(.title2).foregroundStyle(.secondary) }

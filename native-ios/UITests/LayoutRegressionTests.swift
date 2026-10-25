@@ -70,6 +70,22 @@ final class LayoutRegressionTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(cards.firstMatch.frame.minX, 12)
         capture("Layout-Profile-Shelf-left-edge")
     }
+    func testOnlyOneAddToLibraryMenu() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-language", "en", "-startPage", "0"]
+        app.launchEnvironment = ["M2_DETAIL": "1677", "M2_FIXTURES": "1", "M3_ACCOUNT_FIXTURES": "1", "M4_LAYOUT_REVIEW": "1"]
+        app.launch()
+        let signIn = app.buttons["Sign in to add to library"]
+        XCTAssertTrue(signIn.waitForExistence(timeout: 10)); signIn.tap()
+        let input = app.secureTextFields["pat-input"]
+        XCTAssertTrue(input.waitForExistence(timeout: 5)); input.tap(); input.typeText("mb-simulator-review"); app.buttons["pat-connect"].tap()
+        let add = app.buttons["Add to library"]
+        XCTAssertTrue(add.waitForExistence(timeout: 10))
+        XCTAssertEqual(app.buttons.matching(identifier: "Add to library").count, 1)
+        add.tap()
+        XCTAssertTrue(app.buttons["Plan to read"].waitForExistence(timeout: 5))
+        capture("Layout-Single-Add-Menu")
+    }
     func testAccessibilitySizeBrowse() {
         let app = XCUIApplication()
         app.launchArguments = ["-language", "zh-Hans", "-startPage", "2", "-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]

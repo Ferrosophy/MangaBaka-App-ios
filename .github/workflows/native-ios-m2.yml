@@ -100,7 +100,7 @@ jobs:
         if-no-files-found: error
         retention-days: 14
   test:
-    needs: api
+    needs: [api, build-ipa]
     runs-on: macos-26
     timeout-minutes: 25
     defaults:

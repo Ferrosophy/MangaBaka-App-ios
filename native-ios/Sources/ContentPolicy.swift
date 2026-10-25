@@ -26,8 +26,9 @@ extension EnvironmentValues {
 struct PolicyCover: View {
     let url: URL?
     let rating: String?
+    var mode: ContentMode = .fill
     @Environment(Preferences.self) private var preferences
     var body: some View {
-        CoverImage(url: url).environment(\.coverRating, rating)
+        CoverImage(url: url, mode: mode).environment(\.coverRating, rating)
     }
 }

@@ -57,8 +57,12 @@ struct HomeView: View {
     @ViewBuilder private func shelfContent(_ shelf: Shelf) -> some View {
         let state = model.states[shelf] ?? HomeModel.State()
         if state.loading && state.cards.isEmpty {
-            HStack(spacing: 12) { ForEach(0..<3) { _ in RoundedRectangle(cornerRadius: 16).fill(.quaternary).frame(width: 140, height: shelf == .publishers ? 150 : 230) } }
-                .padding(.horizontal, 20).accessibilityLabel(Text("Loading"))
+            HStack(alignment: .top, spacing: 14) {
+                ForEach(0..<3) { index in
+                    cardLabel(HomeCard(id: "placeholder-\(index)", title: " ", localizedTitles: [:], image: nil, link: nil, date: nil, volume: "", count: shelf == .publishers ? 0 : nil), shelf: shelf)
+                        .redacted(reason: .placeholder).accessibilityHidden(true)
+                }
+            }.padding(.horizontal, 20).accessibilityLabel(Text("Loading"))
         } else if state.cards.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text(LocalizedStringKey(state.failed ? "Unable to load this section" : "Nothing here yet")).foregroundStyle(.secondary)
@@ -83,7 +87,7 @@ struct HomeView: View {
     private func cardLabel(_ card: HomeCard, shelf: Shelf) -> some View {
         Group {
             VStack(alignment: .leading, spacing: 8) {
-                PolicyCover(url: card.image, rating: card.contentRating).frame(width: shelf == .publishers ? 52 : 140, height: shelf == .publishers ? 52 : 210).clipShape(RoundedRectangle(cornerRadius: 14))
+                PolicyCover(url: card.image, rating: card.contentRating, mode: shelf == .publishers ? .fit : .fill).frame(width: shelf == .publishers ? 52 : 140, height: shelf == .publishers ? 52 : 210).clipShape(RoundedRectangle(cornerRadius: 14))
                 if let date = card.date {
                     Text(releaseDate(date)).font(.caption.weight(.semibold)).foregroundStyle(.green)
                 }

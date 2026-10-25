@@ -56,7 +56,7 @@ struct TranslatedDescription: View {
             }
             Text((try? AttributedString(markdown: visibleText, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))) ?? AttributedString(visibleText))
                 .lineSpacing(6).lineLimit(expanded ? nil : 8).textSelection(.enabled)
-            if model.showingTranslation { Text("\(preferences.text("Translated by")) \(provider.title)").font(.caption).foregroundStyle(.secondary) }
+            if model.showingTranslation { Text("\(preferences.text("Translated by")) \(preferences.text(provider.title))").font(.caption).foregroundStyle(.secondary) }
             if let failure = model.failure {
                 Text(preferences.text(failure)).font(.footnote).foregroundStyle(.orange)
                 HStack { Button("Retry") { translate() }; Button("Translation settings") { settings = true } }
@@ -93,11 +93,11 @@ struct TranslationSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Picker("Translation service", selection: $providerName) { ForEach(TranslationProvider.allCases) { Text($0.title).tag($0.rawValue) } }
+                Picker("Translation service", selection: $providerName) { ForEach(TranslationProvider.allCases) { Text(LocalizedStringKey($0.title)).tag($0.rawValue) } }
                 Picker("Target language", selection: $targetName) { Text("Follow app language").tag("auto"); Text("简体中文").tag("zh-Hans"); Text("English").tag("en") }
             }
             Section("Service credentials") {
-                SecureField(provider == .volcano ? "Access Key ID" : "API Key", text: $credentials.key).textInputAutocapitalization(.never).autocorrectionDisabled()
+                SecureField(LocalizedStringKey(provider == .volcano ? "Access Key ID" : "API Key"), text: $credentials.key).textInputAutocapitalization(.never).autocorrectionDisabled()
                 if provider == .volcano { SecureField("Secret Access Key", text: $credentials.secret).textInputAutocapitalization(.never).autocorrectionDisabled() }
                 if provider == .bing { TextField("Resource region (if required)", text: $credentials.region).textInputAutocapitalization(.never).autocorrectionDisabled() }
                 Button("Save credentials") {
