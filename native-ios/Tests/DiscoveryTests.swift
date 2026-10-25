@@ -33,6 +33,11 @@ final class DiscoveryTests: XCTestCase {
         let card = HomeCard.parse(["id": 1, "title": "English", "native_title": "原文", "content_rating": "safe"], shelf: .trending)!
         XCTAssertEqual(restored.title(card), "原文")
     }
+    func testSuggestionsRespectVisibilityAndLibraryExclusion() throws {
+        let p = Preferences(defaults: UserDefaults(suiteName: UUID().uuidString)!)
+        let cards = try [["id": 1, "title": "Allowed", "content_rating": "safe"], ["id": 2, "title": "Hidden", "content_rating": "erotica"], ["id": 3, "title": "Owned", "content_rating": "suggestive"]].map { try XCTUnwrap(HomeCard.parse($0, shelf: .trending)) }
+        XCTAssertEqual(p.visible(cards, excluding: ["3"]).map(\.id), ["1"])
+    }
     func testNewsIndependentReferences() {
         let article = NewsArticle(record: DetailRecord(["id": 3, "title": "News", "url": "javascript:alert(1)", "mentioned_series": [1, 2], "series": [["id": 1, "title": "One", "content_rating": "safe"]]]))
         XCTAssertNil(article.url); XCTAssertEqual(article.total, 2); XCTAssertEqual(article.series.count, 1)

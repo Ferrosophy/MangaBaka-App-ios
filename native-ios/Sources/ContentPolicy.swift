@@ -4,6 +4,9 @@ extension Preferences {
     static let ratings = ["safe", "suggestive", "erotica", "pornographic"]
     static let ratingNames = ["Safe content", "Suggestive", "Erotica", "Pornographic"]
     func allows(_ rating: String?) -> Bool { rating == nil || rating == "" || visibleRatings.contains(rating!) }
+    func visible(_ cards: [HomeCard], excluding ids: Set<String> = []) -> [HomeCard] {
+        cards.filter { allows($0.contentRating) && !ids.contains($0.id) }
+    }
     func title(_ card: HomeCard) -> String {
         let code = titleLanguage == "auto" ? (locale.identifier.hasPrefix("zh") ? "zh" : "en") : titleLanguage
         if code == "native", let native = card.nativeTitle, !native.isEmpty { return native }

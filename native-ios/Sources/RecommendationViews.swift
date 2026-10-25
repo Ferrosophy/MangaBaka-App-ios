@@ -35,7 +35,7 @@ struct MixView: View {
                     DiscoveryFooter(list: list) { await load() }
                     if !seedSuggestions.cards.isEmpty {
                         Text("Suggested seeds").font(.headline)
-                        ForEach(seedSuggestions.cards.filter { c in !seeds.contains { $0.id == c.id } }.prefix(6)) { card in Button { add(card) } label: { Label(preferences.title(card), systemImage: "plus.circle") }.disabled(seeds.count >= 25) }
+                        ForEach(preferences.visible(seedSuggestions.cards, excluding: Set(seeds.map(\.id))).prefix(6)) { card in Button { add(card) } label: { Label(preferences.title(card), systemImage: "plus.circle") }.disabled(seeds.count >= 25) }
                     }
                 }
             }.padding()

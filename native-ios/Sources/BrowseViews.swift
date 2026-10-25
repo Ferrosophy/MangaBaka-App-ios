@@ -64,6 +64,7 @@ struct BrowseResultsView: View {
     var ranked = false
     @State private var list = DiscoveryList()
     @State private var suggestions = DiscoveryList()
+    @Environment(LibraryRepository.self) private var library
     @State private var genres: [DetailRecord] = []
     @State private var showingFilters = false
     @Environment(Preferences.self) private var preferences
@@ -83,7 +84,7 @@ struct BrowseResultsView: View {
             .searchable(text: $query.text, prompt: "Search series")
             .searchSuggestions {
                 if preferences.browseSuggestions && !query.text.isEmpty {
-                    ForEach(Array(suggestions.cards.prefix(8))) { card in Text(preferences.title(card)).searchCompletion(preferences.title(card)) }
+                    ForEach(Array(preferences.visible(suggestions.cards, excluding: preferences.hideLibrary ? Set(library.entries.map(\.id)) : []).prefix(8))) { card in Text(preferences.title(card)).searchCompletion(preferences.title(card)) }
                 }
             }
             .toolbar { Button("Filters", systemImage: "line.3.horizontal.decrease") { showingFilters = true } }
