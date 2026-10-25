@@ -56,7 +56,7 @@ struct WorksContent: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             if !forceGrid { Button { grid.toggle() } label: { Label("Change layout", systemImage: grid ? "list.bullet" : "square.grid.2x2") }.frame(minHeight: 44) }
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .top), count: grid || forceGrid ? 2 : 1), spacing: 14) {
+            UniformGrid(columns: grid || forceGrid ? 2 : 1, spacing: 14, rowSpacing: 14) { width in
                 ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                     let item = items[index]
                     Button { if !item.urls.isEmpty { gallery = GalleryPresentation(items: items, selectedID: item.id) } } label: {
@@ -69,7 +69,7 @@ struct WorksContent: View {
                                 metadata(row, title: item.title).frame(maxWidth: .infinity, alignment: .leading)
                             }.detailCard()
                         }
-                    }.buttonStyle(.plain).accessibilityIdentifier("work-cover-\(row.id)")
+                    }.frame(width: width).contentShape(Rectangle()).buttonStyle(.plain).accessibilityElement(children: .ignore).accessibilityLabel([item.title, localDate(row.text("release_date"), locale: locale), row.text("pages") + " " + preferences.text("Pages"), preferences.text(row.text("count_type"))].filter { !$0.isEmpty }.joined(separator: ", ")).accessibilityIdentifier("work-cover-\(row.id)")
                     .accessibilityHint(Text(row.workImages.isEmpty ? "Series cover used as fallback" : "Preview cover"))
                 }
             }

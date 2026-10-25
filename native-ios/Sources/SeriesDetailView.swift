@@ -159,11 +159,11 @@ struct SeriesDetailView: View {
             let caption = [row.text("language").uppercased(), preferences.text(row.text("type")), row.text("index")].filter { !$0.isEmpty }.joined(separator: " · ")
             return GalleryItem(id: "\(index)-\(row.id)", urls: urls, title: caption, thumbnail: row.coverCandidates)
         }
-        return LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 150 : 95), spacing: 12)], spacing: 18) {
+        return UniformGrid(minimum: typeSize.isAccessibilitySize ? 150 : 95, spacing: 12, rowSpacing: 18) { width in
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                 Button { showGallery(items, index: index) } label: {
-                    VStack(alignment: .leading) { CandidateImage(urls: item.thumbnail).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(item.title).font(.caption).lineLimit(2, reservesSpace: true) }
-                }.buttonStyle(.plain).disabled(item.urls.isEmpty).accessibilityIdentifier("cover-card-\(index)")
+                    VStack(alignment: .leading) { CandidateImage(urls: item.thumbnail).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(item.title).font(.caption).lineLimit(2, reservesSpace: true) }.frame(width: width)
+                }.frame(width: width).contentShape(Rectangle()).buttonStyle(.plain).disabled(item.urls.isEmpty).accessibilityElement(children: .ignore).accessibilityLabel(item.title).accessibilityIdentifier("cover-card-\(index)")
             }
         }
     }
@@ -204,12 +204,12 @@ struct SeriesGrid: View {
     @Environment(Preferences.self) private var preferences
     var body: some View {
         let cards = cards()
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: listStyle ? 1 : (typeSize.isAccessibilitySize ? min(2, columns) : columns)), alignment: .leading, spacing: 18) {
+        UniformGrid(columns: listStyle ? 1 : (typeSize.isAccessibilitySize ? min(2, columns) : columns), spacing: 12, rowSpacing: 18) { width in
             ForEach(cards) { card in
                 NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: {
                     if listStyle { HStack { PolicyCover(url: card.image, rating: card.contentRating).frame(width: 60, height: 90).clipShape(RoundedRectangle(cornerRadius: 8)); Text(preferences.title(card)).frame(maxWidth: .infinity, alignment: .leading) } }
                     else { VStack(alignment: .leading) { PolicyCover(url: card.image, rating: card.contentRating).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(preferences.title(card)).font(.caption.weight(.semibold)).lineLimit(2, reservesSpace: true); Text(relation(card.id).map { preferences.text($0) } ?? " ").font(.caption).foregroundStyle(.secondary).lineLimit(1) } }
-                }.buttonStyle(.plain).accessibilityIdentifier("series-card-\(card.id)")
+                }.frame(width: width).contentShape(Rectangle()).buttonStyle(.plain).accessibilityElement(children: .ignore).accessibilityLabel([preferences.title(card), relation(card.id).map { preferences.text($0) } ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")).accessibilityIdentifier("series-card-\(card.id)")
             }
         }
     }

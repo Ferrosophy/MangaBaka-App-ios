@@ -76,7 +76,7 @@ struct TranslatedDescription: View {
             guard credentials.valid(for: provider) else { model.failure = TranslationFailure.missing.errorDescription; settings = true; return }
             let plain = (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace))).map { String($0.characters) } ?? text
             model.start(plain, provider: provider, target: target, credentials: credentials)
-        } catch { model.failure = TranslationFailure.storage.errorDescription }
+        } catch { model.failure = TranslationFailure.storage.errorDescription; settings = true }
     }
 }
 struct TranslationSettingsView: View {

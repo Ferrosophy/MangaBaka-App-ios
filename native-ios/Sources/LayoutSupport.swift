@@ -75,3 +75,28 @@ enum RefreshDeadline {
 extension View {
     @MainActor func safeRefreshable(_ action: @escaping @MainActor () async -> Void) -> some View { modifier(SafeRefresh(action: action)) }
 }
+
+/// Explicit fixed columns also bound NavigationLink's hit/accessibility geometry.
+/// A zero-height measuring sibling reads the available content width before cells size.
+struct UniformGrid<Content: View>: View {
+    var columns: Int? = nil
+    var minimum: CGFloat = 100
+    var spacing: CGFloat = 12
+    var rowSpacing: CGFloat = 18
+    let content: (CGFloat) -> Content
+    @State private var available: CGFloat = 0
+    init(columns: Int? = nil, minimum: CGFloat = 100, spacing: CGFloat = 12, rowSpacing: CGFloat = 18, @ViewBuilder content: @escaping (CGFloat) -> Content) {
+        self.columns = columns; self.minimum = minimum; self.spacing = spacing; self.rowSpacing = rowSpacing; self.content = content
+    }
+    var body: some View {
+        let count = columns ?? max(1, Int((available + spacing) / (minimum + spacing)))
+        let width = max(1, (available - CGFloat(count - 1) * spacing) / CGFloat(count))
+        VStack(spacing: 0) {
+            Color.clear.frame(height: 0).frame(minWidth: 0, maxWidth: .infinity)
+                .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { available = $0 }
+            if available > 0 {
+                LazyVGrid(columns: Array(repeating: GridItem(.fixed(width), spacing: spacing, alignment: .top), count: count), alignment: .leading, spacing: rowSpacing) { content(width) }
+            }
+        }.frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
+    }
+}

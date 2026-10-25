@@ -40,10 +40,10 @@ struct DiscoveryCards: View {
     @Environment(Preferences.self) private var preferences
     @Environment(LibraryRepository.self) private var library
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 150 : 100), spacing: 12)], alignment: .leading, spacing: 20) {
+        UniformGrid(minimum: typeSize.isAccessibilitySize ? 150 : 100, spacing: 12, rowSpacing: 20) { width in
             ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
                 if preferences.allows(card.contentRating) && (!excludeLibrary || !library.entries.contains { $0.id == card.id }) {
-                    NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card, rank: ranked ? index + 1 : nil) }.buttonStyle(.plain).accessibilityIdentifier("discovery-card-\(card.id)")
+                    NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card, rank: ranked ? index + 1 : nil).frame(width: width) }.frame(width: width).contentShape(Rectangle()).buttonStyle(.plain).accessibilityElement(children: .ignore).accessibilityLabel(preferences.title(card)).accessibilityIdentifier("discovery-card-\(card.id)")
                 }
             }
         }
