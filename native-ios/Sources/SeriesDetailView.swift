@@ -163,7 +163,7 @@ struct SeriesDetailView: View {
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                 Button { showGallery(items, index: index) } label: {
                     VStack(alignment: .leading) { CandidateImage(urls: item.thumbnail).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(item.title).font(.caption).lineLimit(2, reservesSpace: true) }.frame(width: width)
-                }.frame(width: width).contentShape(Rectangle()).buttonStyle(.plain).disabled(item.urls.isEmpty).accessibilityElement(children: .ignore).accessibilityLabel(item.title).accessibilityIdentifier("cover-card-\(index)")
+                }.buttonStyle(.plain).disabled(item.urls.isEmpty).accessibilityLabel(item.title).accessibilityIdentifier("cover-card-\(index)").frame(width: width).contentShape(Rectangle())
             }
         }
     }
@@ -209,7 +209,7 @@ struct SeriesGrid: View {
                 NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: {
                     if listStyle { HStack { PolicyCover(url: card.image, rating: card.contentRating).frame(width: 60, height: 90).clipShape(RoundedRectangle(cornerRadius: 8)); Text(preferences.title(card)).frame(maxWidth: .infinity, alignment: .leading) } }
                     else { VStack(alignment: .leading) { PolicyCover(url: card.image, rating: card.contentRating).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(preferences.title(card)).font(.caption.weight(.semibold)).lineLimit(2, reservesSpace: true); Text(relation(card.id).map { preferences.text($0) } ?? " ").font(.caption).foregroundStyle(.secondary).lineLimit(1) } }
-                }.frame(width: width).contentShape(Rectangle()).buttonStyle(.plain).accessibilityElement(children: .ignore).accessibilityLabel([preferences.title(card), relation(card.id).map { preferences.text($0) } ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")).accessibilityIdentifier("series-card-\(card.id)")
+                }.buttonStyle(.plain).accessibilityLabel([preferences.title(card), relation(card.id).map { preferences.text($0) } ?? ""].filter { !$0.isEmpty }.joined(separator: ", ")).accessibilityIdentifier("series-card-\(card.id)").frame(width: width).contentShape(Rectangle())
             }
         }
     }

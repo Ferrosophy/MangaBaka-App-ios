@@ -43,7 +43,7 @@ struct DiscoveryCards: View {
         UniformGrid(minimum: typeSize.isAccessibilitySize ? 150 : 100, spacing: 12, rowSpacing: 20) { width in
             ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
                 if preferences.allows(card.contentRating) && (!excludeLibrary || !library.entries.contains { $0.id == card.id }) {
-                    NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card, rank: ranked ? index + 1 : nil).frame(width: width) }.frame(width: width).contentShape(Rectangle()).buttonStyle(.plain).accessibilityElement(children: .ignore).accessibilityLabel(preferences.title(card)).accessibilityIdentifier("discovery-card-\(card.id)")
+                    NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card, rank: ranked ? index + 1 : nil).frame(width: width) }.buttonStyle(.plain).accessibilityLabel(preferences.title(card)).accessibilityIdentifier("discovery-card-\(card.id)").frame(width: width).contentShape(Rectangle())
                 }
             }
         }
@@ -157,7 +157,7 @@ struct NewsView: View {
             }.buttonStyle(.plain).disabled(article.url == nil).accessibilityLabel(Text(r.text("title")))
             if article.total > 0 {
                 HStack { Text("Referenced series"); Text("\(visible.count) / \(article.total)") }.font(.caption.bold()).foregroundStyle(.secondary)
-                ScrollView(.horizontal, showsIndicators: false) { LazyHStack(alignment: .top, spacing: 12) { ForEach(visible) { card in NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card).frame(width: 100) }.buttonStyle(.plain) } }.scrollTargetLayout() }.scrollClipDisabled().scrollTargetBehavior(.viewAligned)
+                ScrollView(.horizontal, showsIndicators: false) { LazyHStack(alignment: .top, spacing: 12) { ForEach(visible) { card in NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card).frame(width: 100) }.buttonStyle(.plain).accessibilityLabel(preferences.title(card)).frame(width: 100).contentShape(Rectangle()) } }.scrollTargetLayout() }.scrollClipDisabled().scrollTargetBehavior(.viewAligned)
             }
         }.padding(18).background(.quaternary.opacity(0.4), in: RoundedRectangle(cornerRadius: 24))
     }

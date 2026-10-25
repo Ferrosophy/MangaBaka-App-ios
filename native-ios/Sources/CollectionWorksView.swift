@@ -69,8 +69,8 @@ struct WorksContent: View {
                                 metadata(row, title: item.title).frame(maxWidth: .infinity, alignment: .leading)
                             }.detailCard()
                         }
-                    }.frame(width: width).contentShape(Rectangle()).buttonStyle(.plain).accessibilityElement(children: .ignore).accessibilityLabel([item.title, localDate(row.text("release_date"), locale: locale), row.text("pages") + " " + preferences.text("Pages"), preferences.text(row.text("count_type"))].filter { !$0.isEmpty }.joined(separator: ", ")).accessibilityIdentifier("work-cover-\(row.id)")
-                    .accessibilityHint(Text(row.workImages.isEmpty ? "Series cover used as fallback" : "Preview cover"))
+                    }.buttonStyle(.plain).accessibilityLabel([item.title, localDate(row.text("release_date"), locale: locale), row.text("pages") + " " + preferences.text("Pages"), preferences.text(row.text("count_type"))].filter { !$0.isEmpty }.joined(separator: ", ")).accessibilityIdentifier("work-cover-\(row.id)")
+                    .accessibilityHint(Text(row.workImages.isEmpty ? "Series cover used as fallback" : "Preview cover")).frame(width: width).contentShape(Rectangle())
                 }
             }
         }.fullScreenCover(item: $gallery) { presentation in ImageViewer(items: presentation.items, selected: presentation.selectedID) }

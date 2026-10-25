@@ -40,7 +40,7 @@ struct ProfileView: View {
         VStack(alignment: .leading) {
             Text(LocalizedStringKey(title)).font(.headline)
             if rows.isEmpty { Text("Your library is empty.").foregroundStyle(.secondary) }
-            else { ScrollView(.horizontal, showsIndicators: false) { HStack(alignment: .top, spacing: 14) { ForEach(Array(rows.filter { preferences.allows($0.contentRating) }.prefix(10))) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { LibraryTile(entry: entry).frame(width: 120) }.buttonStyle(.plain).accessibilityIdentifier("snapshot-\(title)-\(entry.id)") } }.scrollTargetLayout() }.scrollClipDisabled().scrollTargetBehavior(.viewAligned) }
+            else { ScrollView(.horizontal, showsIndicators: false) { HStack(alignment: .top, spacing: 14) { ForEach(Array(rows.filter { preferences.allows($0.contentRating) }.prefix(10))) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { LibraryTile(entry: entry).frame(width: 120) }.buttonStyle(.plain).accessibilityLabel(preferences.title(entry)).accessibilityValue(entry.percentage.map { String(format: "%.0f%%", $0 * 100) } ?? preferences.text("Progress unknown")).accessibilityIdentifier("snapshot-\(title)-\(entry.id)").frame(width: 120).contentShape(Rectangle()) } }.scrollTargetLayout() }.scrollClipDisabled().scrollTargetBehavior(.viewAligned) }
         }
     }
 }

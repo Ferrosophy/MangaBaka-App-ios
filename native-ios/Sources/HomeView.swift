@@ -79,9 +79,9 @@ struct HomeView: View {
     }
     @ViewBuilder private func cardView(_ card: HomeCard, shelf: Shelf) -> some View {
         if let id = card.seriesID {
-            NavigationLink { SeriesDetailView(id: id, preview: card) } label: { cardLabel(card, shelf: shelf) }.buttonStyle(.plain)
+            NavigationLink { SeriesDetailView(id: id, preview: card) } label: { cardLabel(card, shelf: shelf) }.buttonStyle(.plain).accessibilityLabel(preferences.title(card)).frame(width: shelf == .publishers ? 168 : 140).contentShape(Rectangle())
         } else {
-            Button { if let url = card.link { web = WebPage(url: url) } } label: { cardLabel(card, shelf: shelf) }.buttonStyle(.plain).disabled(card.link == nil)
+            Button { if let url = card.link { web = WebPage(url: url) } } label: { cardLabel(card, shelf: shelf) }.buttonStyle(.plain).accessibilityLabel(preferences.title(card)).frame(width: shelf == .publishers ? 168 : 140).contentShape(Rectangle()).disabled(card.link == nil)
         }
     }
     private func cardLabel(_ card: HomeCard, shelf: Shelf) -> some View {
