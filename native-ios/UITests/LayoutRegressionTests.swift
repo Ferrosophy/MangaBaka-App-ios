@@ -93,6 +93,13 @@ final class LayoutRegressionTests: XCTestCase {
         app.launch()
         XCTAssertTrue(app.staticTexts["日漫"].waitForExistence(timeout: 8))
         capture("Layout-Chinese-Accessibility-text")
+        let rank = app.buttons["最受欢迎"].firstMatch
+        if !rank.isHittable { app.swipeUp() }; rank.tap()
+        let first = app.buttons["discovery-card-101"], second = app.buttons["discovery-card-102"]
+        XCTAssertTrue(first.waitForExistence(timeout: 8))
+        XCTAssertGreaterThan(first.frame.width, 140)
+        XCTAssertEqual(first.frame.height, second.frame.height, accuracy: 1)
+        capture("Layout-Chinese-Accessibility-grid")
     }
     private func capture(_ name: String) { let a = XCTAttachment(screenshot: XCUIScreen.main.screenshot()); a.name = name; a.lifetime = .keepAlways; add(a) }
 }

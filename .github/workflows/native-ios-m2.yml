@@ -8,6 +8,7 @@ name: Native iOS M4
         options:
         - full
         - unit
+        - layout
         default: full
         required: true
 permissions:
@@ -143,6 +144,10 @@ jobs:
         TEST_COMMAND=(xcodebuild test)
 
         if [[ "$TEST_SCOPE" == "unit" ]]; then TEST_COMMAND+=(-only-testing:MangaBakaNativeTests);
+        fi
+
+        if [[ "$TEST_SCOPE" == "layout" ]]; then TEST_COMMAND+=(-only-testing:MangaBakaNativeTests
+        -only-testing:MangaBakaNativeUITests/LayoutRegressionTests -only-testing:MangaBakaNativeUITests/DetailNavigationTests);
         fi
 
         echo "Verification scope: $TEST_SCOPE"

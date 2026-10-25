@@ -33,13 +33,14 @@ struct DiscoveryTile: View {
     }
 }
 struct DiscoveryCards: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     let cards: [HomeCard]
     var ranked = false
     var excludeLibrary = false
     @Environment(Preferences.self) private var preferences
     @Environment(LibraryRepository.self) private var library
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100), spacing: 12)], alignment: .leading, spacing: 20) {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 150 : 100), spacing: 12)], alignment: .leading, spacing: 20) {
             ForEach(Array(cards.enumerated()), id: \.element.id) { index, card in
                 if preferences.allows(card.contentRating) && (!excludeLibrary || !library.entries.contains { $0.id == card.id }) {
                     NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: { DiscoveryTile(card: card, rank: ranked ? index + 1 : nil) }.buttonStyle(.plain).accessibilityIdentifier("discovery-card-\(card.id)")

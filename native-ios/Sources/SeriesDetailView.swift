@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct SeriesDetailView: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     let preview: HomeCard?
     @State private var model: DetailModel
     @State private var selected: DetailTab = .info
@@ -158,7 +159,7 @@ struct SeriesDetailView: View {
             let caption = [row.text("language").uppercased(), preferences.text(row.text("type")), row.text("index")].filter { !$0.isEmpty }.joined(separator: " · ")
             return GalleryItem(id: "\(index)-\(row.id)", urls: urls, title: caption, thumbnail: row.coverCandidates)
         }
-        return LazyVGrid(columns: [GridItem(.adaptive(minimum: 95), spacing: 12)], spacing: 18) {
+        return LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 150 : 95), spacing: 12)], spacing: 18) {
             ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                 Button { showGallery(items, index: index) } label: {
                     VStack(alignment: .leading) { CandidateImage(urls: item.thumbnail).aspectRatio(2/3, contentMode: .fit).clipShape(RoundedRectangle(cornerRadius: 10)); Text(item.title).font(.caption).lineLimit(2, reservesSpace: true) }
@@ -194,6 +195,7 @@ struct ListStatus: View {
     }
 }
 struct SeriesGrid: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     let records: [DetailRecord]
     let currentID: String
     var columns = 3
@@ -202,7 +204,7 @@ struct SeriesGrid: View {
     @Environment(Preferences.self) private var preferences
     var body: some View {
         let cards = cards()
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: listStyle ? 1 : columns), alignment: .leading, spacing: 18) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: listStyle ? 1 : (typeSize.isAccessibilitySize ? min(2, columns) : columns)), alignment: .leading, spacing: 18) {
             ForEach(cards) { card in
                 NavigationLink { SeriesDetailView(id: card.id, preview: card) } label: {
                     if listStyle { HStack { PolicyCover(url: card.image, rating: card.contentRating).frame(width: 60, height: 90).clipShape(RoundedRectangle(cornerRadius: 8)); Text(preferences.title(card)).frame(maxWidth: .infinity, alignment: .leading) } }

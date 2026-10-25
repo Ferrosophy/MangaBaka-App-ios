@@ -27,6 +27,7 @@ struct SyncBanner: View {
     }
 }
 struct LibraryView: View {
+    @Environment(\.dynamicTypeSize) private var typeSize
     @Environment(Preferences.self) private var preferences
     @Environment(AuthSession.self) private var auth
     @Environment(LibraryRepository.self) private var library
@@ -64,7 +65,7 @@ struct LibraryView: View {
                             if rows.isEmpty {
                                 ContentUnavailableView(query.isEmpty ? "No books in this category" : "No results found", systemImage: "books.vertical", description: Text(query.isEmpty ? "Add a series from its detail page to start your library." : "Try another title or clear your search."))
                             } else if grid {
-                                LazyVGrid(columns: [GridItem(.adaptive(minimum: 110), alignment: .top)], alignment: .leading, spacing: 20) { ForEach(rows) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { LibraryTile(entry: entry) }.buttonStyle(.plain).accessibilityIdentifier("library-entry-\(entry.id)") } }
+                                LazyVGrid(columns: [GridItem(.adaptive(minimum: typeSize.isAccessibilitySize ? 150 : 110), alignment: .top)], alignment: .leading, spacing: 20) { ForEach(rows) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { LibraryTile(entry: entry) }.buttonStyle(.plain).accessibilityIdentifier("library-entry-\(entry.id)") } }
                             } else {
                                 LazyVStack { ForEach(rows) { entry in NavigationLink { SeriesDetailView(id: entry.id) } label: { HStack { LibraryTile(entry: entry, compact: true); Spacer(); Image(systemName: "chevron.right") } }.buttonStyle(.plain) } }
                             }
